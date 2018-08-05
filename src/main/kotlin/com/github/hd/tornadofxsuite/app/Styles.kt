@@ -10,15 +10,9 @@ class Styles : Stylesheet() {
         val heading by cssclass()
         val mainScreen by cssclass()
         val top by cssclass()
-        val console by cssclass()
     }
 
     init {
-        label and heading {
-            padding = box(10.px)
-            fontSize = 20.px
-            fontWeight = FontWeight.BOLD
-        }
 
         mainScreen {
             backgroundColor += c("#222")
@@ -39,8 +33,16 @@ class Styles : Stylesheet() {
             }
         }
 
-        console {
+        cell {
             backgroundColor += c("#004600")
+            textFill = Color.WHITE
+        }
+
+        listView {
+            and (focused, selected) {
+                backgroundColor += Color.TRANSPARENT
+            }
+            fitToWidth = true
         }
     }
 }

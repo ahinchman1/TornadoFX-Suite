@@ -1,7 +1,7 @@
 package com.github.hd.tornadofxsuite.view
 
 import com.github.hd.tornadofxsuite.app.Styles
-import javafx.scene.layout.Priority
+import javafx.scene.control.ListView
 import javafx.scene.paint.Color
 import tornadofx.*
 import java.io.File
@@ -14,10 +14,10 @@ import java.nio.file.Paths
 class MainView : View("TornadoFX-Suite") {
     private val kotlinFiles = ArrayList<File>()
     private val consolePath = System.getProperty("os.name") + " ~ " + System.getProperty("user.name") + ": "
-    private val console = textflow().addClass(Styles.console)
+    private lateinit var console: ListView<String>
 
     override val root = vbox {
-        prefWidth = 400.0
+        prefWidth = 800.0
         prefHeight = 600.0
 
         hbox {
@@ -28,12 +28,10 @@ class MainView : View("TornadoFX-Suite") {
             }
         }.addClass(Styles.top)
 
-        scrollpane {
-            prefWidth = 200.0
-            prefHeight = 200.0
-            console
+        console = listview {
+            items.add(consolePath)
             vboxConstraints {
-                marginTopBottom(60.0)
+                marginTopBottom(40.0)
                 marginLeftRight(40.0)
             }
         }
@@ -49,8 +47,8 @@ class MainView : View("TornadoFX-Suite") {
                 kotlinFiles.forEach { println(it) }
             }
             vboxConstraints {
-                marginLeft = 100.0
-                marginTop = 20.0
+                marginLeft = 300.0
+                marginBottom = 40.0
             }
         }
 
@@ -68,8 +66,7 @@ class MainView : View("TornadoFX-Suite") {
     private fun fileOutputRead(file: Path) {
         kotlinFiles.add(File(file.toUri()))
         println(file)
-        console.add(text(consolePath + file.toString()) {
-            fill = Color.WHITE
-        })
+        console.items.removeAll()
+        console.items.add(consolePath + file.toString())
     }
 }
