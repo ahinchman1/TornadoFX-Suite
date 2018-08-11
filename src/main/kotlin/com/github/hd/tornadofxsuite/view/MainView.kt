@@ -1,21 +1,15 @@
 package com.github.hd.tornadofxsuite.view
 
 import com.github.hd.tornadofxsuite.app.Styles
+import com.github.hd.tornadofxsuite.controller.FXTestGenerator
 import javafx.scene.control.ListView
 import tornadofx.*
-import java.io.BufferedReader
 import java.io.File
-import java.io.FileReader
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
-
-
 
 class MainView : View("TornadoFX-Suite") {
-    private val kotlinFiles = ArrayList<File>()
-    private val consolePath = System.getProperty("os.name") + " ~ " + System.getProperty("user.name") + ": "
-    private lateinit var console: ListView<String>
+    val consolePath = System.getProperty("os.name") + " ~ " + System.getProperty("user.name") + ": "
+    lateinit var console: ListView<String>
+    private val fxTestGenerator: FXTestGenerator by inject()
 
     override val root = vbox {
         prefWidth = 800.0
@@ -43,9 +37,9 @@ class MainView : View("TornadoFX-Suite") {
                     title = "Choose a TornadoFX Project"
                     initialDirectory = File(System.getProperty("user.home"))
                 }?.let {
-                    walk(it.absolutePath)
+                    fxTestGenerator.walk(it.absolutePath)
                 }
-                kotlinFiles.forEach { println(it) }
+                fxTestGenerator.kotlinFiles.forEach { println(it) }
             }
             vboxConstraints {
                 marginLeft = 300.0
@@ -54,33 +48,5 @@ class MainView : View("TornadoFX-Suite") {
         }
 
     }.addClass(Styles.mainScreen)
-
-    private fun walk(path: String) {
-        console.items.clear()
-        console.items.add("SEARCHING FILES...")
-        Files.walk(Paths.get(path)).use { allFiles ->
-            allFiles.filter { path -> path.toString().endsWith(".kt") }
-                    .forEach {
-                        fileOutputRead(it)
-                    }
-        }
-    }
-
-    private fun fileOutputRead(path: Path) {
-        val file = File(path.toUri())
-        println(path)
-        filterFiles(file)
-    }
-
-    // filter files for only Views and Controllers
-    private fun filterFiles(file: File) {
-        val fileText = file.bufferedReader().use(BufferedReader::readText)
-        if (!fileText.contains("ApplicationTest()")) {
-            console.items.add(consolePath + file.toString())
-            console.items.add("READING FILES..")
-            kotlinFiles.add(file)
-            console.items.add(fileText)
-        }
-    }
 
 }
