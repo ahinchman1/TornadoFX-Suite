@@ -6,9 +6,14 @@ import javafx.beans.property.SimpleStringProperty
 import tornadofx.*
 import kotlin.reflect.KClass
 
-class ClassBreakDown(classSignature: String, classFields: Fields, classMethods: ClassMethods) {
+data class ClassBreakDown(val className: String,
+                          val classAccess: String? = "public",
+                          val classConstructors: Fields,
+                          val classFields: Fields,
+                          val classMethods: Methods)
 
-}
+data class Parameters(val paramName: String,
+                      val paramType: String)
 
 // Fields
 // var/val nameOfField: Type = initializedValue
@@ -42,14 +47,14 @@ class Fields(fieldName: String, classFieldAccessLevel: String = "public",
 }
 
 // fun method(params: ParamType): returnsType { other calls }
-class ClassMethods(classMethodName: String, classMethodAccess: String = "public",
+class Methods(methodName: String, methodAccess: String = "public",
                    methodParams: Fields, returnsType: String = "void", mappedMethods: Array<String>) {
 
-    val classMethodNameProperty = SimpleStringProperty(this, "", classMethodName)
-    var classMethodName by classMethodNameProperty
+    val methodNameProperty = SimpleStringProperty(this, "", methodName)
+    var methodName by methodNameProperty
 
-    val classMethodAccessProperty = SimpleStringProperty(this, "", classMethodAccess)
-    var classMethodAccess by classMethodAccessProperty
+    val methodAccessProperty = SimpleStringProperty(this, "", methodAccess)
+    var methodAccess by methodAccessProperty
 
     val methodParamsProperty = SimpleObjectProperty(this, "", methodParams)
     var methodParams by methodParamsProperty

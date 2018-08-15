@@ -4,7 +4,6 @@ import com.github.hd.tornadofxsuite.view.MainView
 import com.intellij.psi.PsiElement
 import javafx.event.EventTarget
 import tornadofx.*
-import kastree.ast.psi.Parser
 import java.io.BufferedReader
 import java.io.File
 import java.nio.file.Files
@@ -14,6 +13,7 @@ import java.nio.file.Paths
 class FXTestGenerator: Controller() {
     val kotlinFiles = ArrayList<File>()
     private val view: MainView by inject()
+    private val scanner: ClassScanner by inject()
 
     fun walk(path: String) {
         view.console.items.clear()
@@ -39,7 +39,7 @@ class FXTestGenerator: Controller() {
             kotlinFiles.add(file)
             view.console.items.add(fileText)
             view.console.items.add("===================================================================")
-            parseAST(fileText)
+            scanner.parseAST(fileText)
         }
     }
 
@@ -49,12 +49,6 @@ class FXTestGenerator: Controller() {
                 && !fileText.contains("src/test")
                 && !fileText.contains("@Test")
                 && !fileText.contains("Stylesheet()")
-    }
-
-    private fun parseAST(textFile: String) {
-        val file = Parser.parseFile(textFile)
-        println(file)
-        println()
     }
 
     fun detectModels(psiElement: PsiElement) {
