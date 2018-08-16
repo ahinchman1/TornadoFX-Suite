@@ -1,19 +1,20 @@
 package com.github.hd.tornadofxsuite.model
 
-import javafx.beans.property.SimpleBooleanProperty
-import javafx.beans.property.SimpleObjectProperty
-import javafx.beans.property.SimpleStringProperty
-import tornadofx.*
-import kotlin.reflect.KClass
+import java.util.*
 
 data class ClassBreakDown(val className: String,
                           val classAccess: String? = "public",
-                          val classConstructors: Fields,
-                          val classFields: Fields,
-                          val classMethods: Methods)
+                          val classConstructors: ArrayList<Parameters>,
+                          //val classFields: ArrayList<Fields>,
+                          val classMethods: ArrayList<Methods>)
 
 data class Parameters(val paramName: String,
                       val paramType: String)
+
+data class Methods(val methodName: String,
+              val methodAccess: String = "public",
+              val methodParams: ArrayList<Fields>,
+              val returnsType: String = "void")
 
 // Fields
 // var/val nameOfField: Type = initializedValue
@@ -21,7 +22,14 @@ data class Parameters(val paramName: String,
 // if Global & Local then a global field is being used within a class
 // if just Global, it is the pointer to the global class
 // if just Local, then it is a temporary variable made for the heap
-class Fields(fieldName: String, classFieldAccessLevel: String = "public",
+data class Fields(val fieldName: String,
+                  val classFieldAccessLevel: String = "public",
+                  val classFieldSignature: String = "var",
+                  val classFieldInitialized: Boolean,
+                  val fieldGlobal: Boolean,
+                  val fieldLocal: Boolean)
+
+/*class Fields(fieldName: String, classFieldAccessLevel: String = "public",
              classFieldSignature: String = "var", classFieldInitialized: Boolean,
              fieldGlobal: Boolean, fieldLocal: Boolean) {
 
@@ -62,8 +70,4 @@ class Methods(methodName: String, methodAccess: String = "public",
     val returnsTypeProperty = SimpleStringProperty(this, "", returnsType)
     var returnsType by returnsTypeProperty
 
-}
-
-class classScope: Scope() {
-
-}
+} */

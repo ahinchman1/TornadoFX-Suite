@@ -1,5 +1,6 @@
 package com.github.hd.tornadofxsuite.controller
 
+import com.github.hd.tornadofxsuite.model.ClassBreakDown
 import com.github.hd.tornadofxsuite.view.MainView
 import com.intellij.psi.PsiElement
 import javafx.event.EventTarget
@@ -12,6 +13,7 @@ import java.nio.file.Paths
 
 class FXTestGenerator: Controller() {
     val kotlinFiles = ArrayList<File>()
+    val kotlinClasses = ArrayList<ClassBreakDown>()
     private val view: MainView by inject()
     private val scanner: ClassScanner by inject()
 
@@ -39,7 +41,7 @@ class FXTestGenerator: Controller() {
             kotlinFiles.add(file)
             view.console.items.add(fileText)
             view.console.items.add("===================================================================")
-            scanner.parseAST(fileText)
+            kotlinClasses.add(scanner.parseAST(fileText))
         }
     }
 
