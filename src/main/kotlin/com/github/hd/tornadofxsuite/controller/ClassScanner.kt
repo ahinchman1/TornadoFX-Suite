@@ -1,9 +1,7 @@
 package com.github.hd.tornadofxsuite.controller
 
-import com.github.hd.tornadofxsuite.model.ClassBreakDown
-import com.github.hd.tornadofxsuite.model.Fields
-import com.github.hd.tornadofxsuite.model.Methods
-import com.github.hd.tornadofxsuite.model.Parameters
+import com.github.hd.tornadofxsuite.model.*
+import com.github.hd.tornadofxsuite.model.Function
 import kastree.ast.Node
 import kastree.ast.psi.Parser
 import tornadofx.*
@@ -11,44 +9,71 @@ import tornadofx.*
 
 class ClassScanner: Controller() {
 
-    lateinit var className: String
-    var classConstructors = ArrayList<Parameters>()
-    var classMembers = ArrayList<Methods>()
+    var classBreakDown = ArrayList<ClassBreakDown>()
+    var classAccessLevel = "PUBLIC" // TODO re-examine class access levels
+    var classProperties = ArrayList<Property>()
+    var classDIs = ArrayList<DependencyInjection>()
+    var classFunctions = ArrayList<Function>()
 
-     fun parseAST(textFile: String): ClassBreakDown {
+
+     fun parseAST(textFile: String) {
         val file = Parser.parseFile(textFile)
         println(file)
 
          // class name
-         className = (file.decls[0] as Node.Decl.Structured).name
+         var className = parseName(file)
 
+         // detect all classes in a file.
+         file.decls.forEachIndexed { index: Int, decl: Node.Decl ->
+             println("$index: $decl")
+             val thisFile = (decl as Node.Decl.Structured)
+             className = thisFile.name
+             thisFile.members.forEach {
+                when (it) {
+                    is Node.Decl.Property -> captureClassProperty(it)
+                    is Node.Decl.Func -> captureFunction(it)
+                }
+             }
 
-         // class constructors
-         (file.decls[0] as Node.Decl.Structured).primaryConstructor?.params?.forEach {
-            classConstructors.add(detectParameters(it))
+             classBreakDown.add(ClassBreakDown(className, classAccessLevel, classProperties, classDIs, classFunctions))
          }
-
-         // class fields
-         // TODO: find what class global fields look like
-
-         // class members
-         (file.decls[0] as Node.Decl.Structured).members.forEach {
-             classMembers.add(detectMembers(it as Node.Decl.Func))
-         }
-
-         return ClassBreakDown(className, "public", classConstructors,  classMembers)
     }
 
-    private fun detectParameters(node: Node.Decl.Func.Param): Parameters {
-        return Parameters(node.name, (node.type.ref as Node.TypeRef.Simple).pieces[0].name)
+    fun parseName(file: Node.File): String {
+        return (file.decls[0] as Node.Decl.Structured).name
     }
 
-    private fun detectMembers(node: Node.Decl.Func): Methods {
-        val parameters = ArrayList<Fields>()
-        node.params.forEach {
-            detectParameters(it)
+    private fun captureClassProperty(property: Node.Decl.Property) {
+        val varsName = (property.vars[0] as Node.Decl.Property.Var)
+        var accessLevel = "PUBLIC"
+        if (property.mods.isNotEmpty()) {
+            accessLevel = (property.mods[0] as Node.Modifier.Lit).keyword.name
         }
 
-        return Methods(node.name, "public", parameters, "void")
+        // determine whether the property is a class variable or a dependency injection
+        if (property.delegated) {
+            val diDependency = ((varsName.type as Node.Type).ref as Node.TypeRef.Simple).pieces[0].name
+            classDIs.add(DependencyInjection(varsName.name, accessLevel, diDependency))
+        } else {
+            val type = property.vars.toString()
+            val value = (property.vars[0] as Node.Decl.Property.Var).name
+            classProperties.add(Property(varsName.name, accessLevel, type, value))
+        }
     }
+
+    private fun captureFunction(function: Node.Decl.Func) {
+        var accessLevel = "PUBLIC"
+        val functionParameters = ArrayList<Parameters>()
+
+        if (function.mods.isNotEmpty()) {
+            accessLevel = (function.mods[0] as Node.Modifier.Lit).keyword.name ?: "PUBLIC"
+        }
+        function.params.forEach {
+            functionParameters.add(Parameters(it.name, (it.type.ref as Node.TypeRef.Simple).pieces[0].name))
+        }
+
+        // TODO don't trust that last parameter lol that will need to be re-examined again
+        classFunctions.add(Function(function.name, accessLevel, functionParameters, function.type.toString()))
+    }
+
 }

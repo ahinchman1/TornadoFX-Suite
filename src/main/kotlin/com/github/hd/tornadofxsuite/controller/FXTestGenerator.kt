@@ -4,6 +4,7 @@ import com.github.hd.tornadofxsuite.model.ClassBreakDown
 import com.github.hd.tornadofxsuite.view.MainView
 import com.intellij.psi.PsiElement
 import javafx.event.EventTarget
+import kastree.ast.psi.Parser
 import tornadofx.*
 import java.io.BufferedReader
 import java.io.File
@@ -12,10 +13,13 @@ import java.nio.file.Path
 import java.nio.file.Paths
 
 class FXTestGenerator: Controller() {
-    val kotlinFiles = ArrayList<File>()
-    val kotlinClasses = ArrayList<ClassBreakDown>()
+
     private val view: MainView by inject()
     private val scanner: ClassScanner by inject()
+
+    val kotlinFiles = ArrayList<File>()
+    val kotlinClasses = ArrayList<ClassBreakDown>()
+    private val tornadoFXViews = ArrayList<Pair<String, String>>()
 
     fun walk(path: String) {
         view.console.items.clear()
@@ -41,12 +45,19 @@ class FXTestGenerator: Controller() {
             kotlinFiles.add(file)
             view.console.items.add(fileText)
             view.console.items.add("===================================================================")
-            kotlinClasses.add(scanner.parseAST(fileText))
+            scanner.parseAST(fileText)
         }
     }
 
     // filter files for only Views and Controllers
     private fun filterFiles(fileText: String): Boolean {
+        // Store files with views for control scanning
+        if (fileText.contains("View()")) {
+            val file = Parser.parseFile(fileText)
+            tornadoFXViews.add(Pair(scanner.parseName(file), fileText))
+        }
+
+        // Don't allow the following for class scanning:
         return !fileText.contains("ApplicationTest()")
                 && !fileText.contains("src/test")
                 && !fileText.contains("@Test")
