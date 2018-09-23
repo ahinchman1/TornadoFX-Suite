@@ -1,4 +1,4 @@
-# TornadoFX-Suite
+# TornadoFX-Suite (Stage 1)
 Automated UI test generation for TornadoFX.
 
 ![alttext](https://github.com/ahinchman1/TornadoFX-Suite/blob/master/tornadofx-suite.png)
