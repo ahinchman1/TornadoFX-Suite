@@ -14,25 +14,34 @@ class ClassScanner: Controller() {
     var classMembers = ArrayList<String>()
     var bareClasses = ArrayList<BareBreakDown>()
     var classProperties = ArrayList<ClassProperties>()
+    var independentFunctions = ArrayList<String>()
 
     fun parseAST(textFile: String) {
         val file = Parser.parseFile(textFile)
 
         // store class names and their methods
         file.decls.forEach {
-            val className = (it as Node.Decl.Structured).name
-
-            (file.decls[0] as Node.Decl.Structured).members.forEach {
-                val memberName = ""
-                when (it) {
-                    is Node.Decl.Structured -> println("this is probably a companion object")
-                    is Node.Decl.Property -> convertToJsonProperty(it) // TODO: fill out later
-                    is Node.Decl.Func -> classMembers.add(it.name)
-
-                }
+            when (it) {
+                is Node.Decl.Structured -> breakDownClass(it, file)
+                is Node.Decl.Func -> independentFunctions.add(it.name)
             }
-            bareClasses.add(BareBreakDown(className, classProperties, classMembers))
+
         }
+    }
+
+    private fun breakDownClass(someClass: Node.Decl.Structured, file: Node.File) {
+        val className = (someClass as Node.Decl.Structured).name
+
+        (file.decls[0] as Node.Decl.Structured).members.forEach {
+            val memberName = ""
+            when (it) {
+                is Node.Decl.Structured -> println("this is probably a companion object")
+                is Node.Decl.Property -> convertToJsonProperty(it) // TODO: fill out later
+                is Node.Decl.Func -> classMembers.add(it.name)
+
+            }
+        }
+        bareClasses.add(BareBreakDown(className, classProperties, classMembers))
     }
 
     private fun convertToJsonProperty(property: Node.Decl.Property) {

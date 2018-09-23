@@ -14,7 +14,6 @@ import java.nio.file.Paths
 
 class FXTestGenerator: Controller() {
     val kotlinFiles = ArrayList<File>()
-    val kotlinClasses = ArrayList<BareBreakDown>()
     private val view: MainView by inject()
     private val scanner: ClassScanner by inject()
 
@@ -82,11 +81,4 @@ class FXTestGenerator: Controller() {
     fun detectEvents(eventTarget: EventTarget) {
         // TODO
     }
-
-    /*fun generateTest() {
-        val Test = javaClass.getResource("../BasicTest.txt")
-
-        val scriptReader = Files.newBufferedReader(Paths.get("path/classDeclaration.kts"))
-        val loadedObj: ClassFromScript = KtsObjectLoader().load<ClassFromScript>(scriptReader)
-    }*/
 }
