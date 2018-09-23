@@ -1,7 +1,7 @@
 package com.github.hd.tornadofxsuite
 
-import mu.KLogging
+//import mu.KLogging
 
-class TornadoFXSuite: TornadoFxTest() {
-    companion object: KLogging()
-}
+//class TornadoFXSuite: TornadoFxTest() {
+//    companion object: KLogging()
+//}

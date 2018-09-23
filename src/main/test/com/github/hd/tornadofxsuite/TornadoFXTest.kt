@@ -1,6 +1,6 @@
 package com.github.hd.tornadofxsuite
 
-import com.github.hd.tornadofxsuite.app.TornadoFXSuite
+/*import com.github.hd.tornadofxsuite.app.TornadoFXSuite
 import javafx.application.Platform
 import javafx.scene.Node
 import javafx.scene.Parent
@@ -12,7 +12,7 @@ import java.time.Instant
 
 // authored by wakingrufus
 
-open class TornadoFxTest : ApplicationTest() {
+/open class TornadoFxTest : ApplicationTest() {
     lateinit var wrapper: TestView
     var scene: Scene? = null
     override fun start(stage: Stage) {
@@ -53,3 +53,4 @@ fun printNodes(node: Node, level: Int = 0) {
     }*/
 
 }
+*/

@@ -1,79 +1,76 @@
-package com.github.hd.tornadofxsuite.controller
+package com.example.demo.controller
 
-import com.github.hd.tornadofxsuite.model.*
-import com.github.hd.tornadofxsuite.model.Function
+import com.github.hd.tornadofxsuite.model.BareBreakDown
+import com.github.hd.tornadofxsuite.model.ClassProperties
 import kastree.ast.Node
 import kastree.ast.psi.Parser
 import tornadofx.*
 
-
+/*
+ * TODO - AST mappings, composition.
+ */
 class ClassScanner: Controller() {
 
-    var classBreakDown = ArrayList<ClassBreakDown>()
-    var classAccessLevel = "PUBLIC" // TODO re-examine class access levels
-    var classProperties = ArrayList<Property>()
-    var classDIs = ArrayList<DependencyInjection>()
-    var classFunctions = ArrayList<Function>()
+    var classMembers = ArrayList<String>()
+    var bareClasses = ArrayList<BareBreakDown>()
+    var classProperties = ArrayList<ClassProperties>()
 
-
-     fun parseAST(textFile: String) {
+    fun parseAST(textFile: String) {
         val file = Parser.parseFile(textFile)
-        println(file)
 
-         // class name
-         var className = parseName(file)
+        // store class names and their methods
+        file.decls.forEach {
+            val className = (it as Node.Decl.Structured).name
 
-         // detect all classes in a file.
-         file.decls.forEachIndexed { index: Int, decl: Node.Decl ->
-             println("$index: $decl")
-             val thisFile = (decl as Node.Decl.Structured)
-             className = thisFile.name
-             thisFile.members.forEach {
+            (file.decls[0] as Node.Decl.Structured).members.forEach {
+                val memberName = ""
                 when (it) {
-                    is Node.Decl.Property -> captureClassProperty(it)
-                    is Node.Decl.Func -> captureFunction(it)
+                    is Node.Decl.Structured -> println("this is probably a companion object")
+                    is Node.Decl.Property -> convertToJsonProperty(it) // TODO: fill out later
+                    is Node.Decl.Func -> classMembers.add(it.name)
+
                 }
-             }
-
-             classBreakDown.add(ClassBreakDown(className, classAccessLevel, classProperties, classDIs, classFunctions))
-         }
-    }
-
-    fun parseName(file: Node.File): String {
-        return (file.decls[0] as Node.Decl.Structured).name
-    }
-
-    private fun captureClassProperty(property: Node.Decl.Property) {
-        val varsName = (property.vars[0] as Node.Decl.Property.Var)
-        var accessLevel = "PUBLIC"
-        if (property.mods.isNotEmpty()) {
-            accessLevel = (property.mods[0] as Node.Modifier.Lit).keyword.name
-        }
-
-        // determine whether the property is a class variable or a dependency injection
-        if (property.delegated) {
-            val diDependency = ((varsName.type as Node.Type).ref as Node.TypeRef.Simple).pieces[0].name
-            classDIs.add(DependencyInjection(varsName.name, accessLevel, diDependency))
-        } else {
-            val type = property.vars.toString()
-            val value = (property.vars[0] as Node.Decl.Property.Var).name
-            classProperties.add(Property(varsName.name, accessLevel, type, value))
+            }
+            bareClasses.add(BareBreakDown(className, classProperties, classMembers))
         }
     }
 
-    private fun captureFunction(function: Node.Decl.Func) {
-        var accessLevel = "PUBLIC"
-        val functionParameters = ArrayList<Parameters>()
+    private fun convertToJsonProperty(property: Node.Decl.Property) {
+        val firstTrueBit = "Property(mods=[], readOnly=true, typeParams=[], " +
+                "receiverType=null, vars=[Var(name="
+        val firstFalseBit = "Property(mods=[], readOnly=false, typeParams=[], " +
+                "receiverType=null, vars=[Var(name="
+        val privateFirstTrueBit = "Property(mods=[Lit(keyword=PRIVATE)], " +
+                "readOnly=true, typeParams=[], receiverType=null, vars=[Var("
+        val privateFirstFalseBit = "Property(mods=[Lit(keyword=PRIVATE)], " +
+                "readOnly=false, typeParams=[], receiverType=null, vars=[Var("
+        val secondBit = "expr=Call(expr=Name(name="
+        val string = property.toString()
 
-        if (function.mods.isNotEmpty()) {
-            accessLevel = (function.mods[0] as Node.Modifier.Lit).keyword.name ?: "PUBLIC"
-        }
-        function.params.forEach {
-            functionParameters.add(Parameters(it.name, (it.type.ref as Node.TypeRef.Simple).pieces[0].name))
+        // it ain't stupid if it works shut up
+        if (string.contains(firstTrueBit) || string.contains(secondBit) ||
+                string.contains(privateFirstTrueBit) || string.contains(privateFirstFalseBit)) {
+            println(string)
+            val splitToName = when {
+                string.contains(firstTrueBit) -> string.split(firstTrueBit)[1]
+                string.contains(privateFirstTrueBit) -> string.split(privateFirstTrueBit)[1]
+                string.contains(firstFalseBit) -> string.split(firstFalseBit)[1]
+                string.contains(privateFirstFalseBit) -> string.split(privateFirstFalseBit)[1]
+                else -> return
+            }
+
+            val isolatedName = splitToName.split(",")[0]
+            if (string.contains(secondBit)) {
+                val splitToType = string.split(secondBit)
+                val isolatedType = splitToType[1].split(")")[0]
+
+                classProperties.add(ClassProperties(isolatedName, isolatedType));
+            }
         }
 
-        // TODO don't trust that last parameter lol that will need to be re-examined again
-        classFunctions.add(Function(function.name, accessLevel, functionParameters, function.type.toString()))
+        // TODO - look into TornadoFX to see if it only accepts up to 80 char in a string
+        //val json = loadJsonObject("""$string""")
+
+
     }
-
 }

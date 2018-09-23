@@ -1,10 +1,10 @@
 package com.github.hd.tornadofxsuite.controller
 
-import com.github.hd.tornadofxsuite.model.ClassBreakDown
+import com.example.demo.controller.ClassScanner
+import com.github.hd.tornadofxsuite.model.BareBreakDown
 import com.github.hd.tornadofxsuite.view.MainView
 import com.intellij.psi.PsiElement
 import javafx.event.EventTarget
-import kastree.ast.psi.Parser
 import tornadofx.*
 import java.io.BufferedReader
 import java.io.File
@@ -13,13 +13,10 @@ import java.nio.file.Path
 import java.nio.file.Paths
 
 class FXTestGenerator: Controller() {
-
+    val kotlinFiles = ArrayList<File>()
+    val kotlinClasses = ArrayList<BareBreakDown>()
     private val view: MainView by inject()
     private val scanner: ClassScanner by inject()
-
-    val kotlinFiles = ArrayList<File>()
-    val kotlinClasses = ArrayList<ClassBreakDown>()
-    private val tornadoFXViews = ArrayList<Pair<String, String>>()
 
     fun walk(path: String) {
         view.console.items.clear()
@@ -30,6 +27,7 @@ class FXTestGenerator: Controller() {
                         fileOutputRead(it)
                     }
         }
+        //generateTest()
     }
 
     private fun fileOutputRead(path: Path) {
@@ -46,33 +44,49 @@ class FXTestGenerator: Controller() {
             view.console.items.add(fileText)
             view.console.items.add("===================================================================")
             scanner.parseAST(fileText)
+
+            // print and format classes
+            scanner.bareClasses.forEach {
+                println("CLASS NAME: " + it.className)
+                println("CLASS PROPERTIES: ")
+                it.classProperties.forEach { property ->
+                    println("\t" + property)
+                }
+                println("CLASS METHODS: ")
+                it.classMethods.forEach { method ->
+                    println("\t" + method)
+                }
+            }
+
+
         }
     }
 
+    // TODO: Either use regex or better parsing
     // filter files for only Views and Controllers
     private fun filterFiles(fileText: String): Boolean {
-        // Store files with views for control scanning
-        if (fileText.contains("View()")) {
-            val file = Parser.parseFile(fileText)
-            tornadoFXViews.add(Pair(scanner.parseName(file), fileText))
-        }
-
-        // Don't allow the following for class scanning:
         return !fileText.contains("ApplicationTest()")
                 && !fileText.contains("src/test")
                 && !fileText.contains("@Test")
-                && !fileText.contains("Stylesheet()")
+                && !(fileText.contains("App("))
     }
 
     fun detectModels(psiElement: PsiElement) {
-
+        // TODO
     }
 
     fun detectControls() {
-
+        // TODO
     }
 
     fun detectEvents(eventTarget: EventTarget) {
-
+        // TODO
     }
+
+    /*fun generateTest() {
+        val Test = javaClass.getResource("../BasicTest.txt")
+
+        val scriptReader = Files.newBufferedReader(Paths.get("path/classDeclaration.kts"))
+        val loadedObj: ClassFromScript = KtsObjectLoader().load<ClassFromScript>(scriptReader)
+    }*/
 }

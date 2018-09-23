@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.example</groupId>
-    <artifactId>TornadoFX-Suite</artifactId>
+    <artifactId>tornadofx-maven-project</artifactId>
     <version>1.0</version>
     <packaging>jar</packaging>
 
@@ -17,8 +17,8 @@
     </repositories>
 
     <properties>
-        <kotlin.version>1.2.70</kotlin.version>
-        <tornadofx.version>1.7.14</tornadofx.version>
+        <kotlin.version>1.2.60</kotlin.version>
+        <tornadofx.version>1.7.17</tornadofx.version>
     </properties>
 
     <dependencies>
@@ -26,22 +26,6 @@
             <groupId>no.tornado</groupId>
             <artifactId>tornadofx</artifactId>
             <version>${tornadofx.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.github.microutils</groupId>
-            <artifactId>kotlin-logging</artifactId>
-            <version>1.5.4</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.25</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>1.7.25</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
@@ -52,18 +36,6 @@
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-test</artifactId>
             <version>${kotlin.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testfx</groupId>
-            <artifactId>testfx-core</artifactId>
-            <version>4.0.13-alpha</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testfx</groupId>
-            <artifactId>testfx-junit</artifactId>
-            <version>4.0.13-alpha</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -98,7 +70,7 @@
                             <goal>compile</goal>
                         </goals>
                         <configuration>
-                        <jvmTarget>1.8</jvmTarget>
+                            <jvmTarget>1.8</jvmTarget>
                         </configuration>
                     </execution>
                     <execution>
@@ -109,14 +81,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>8</source>
-                    <target>8</target>
-                </configuration>
             </plugin>
         </plugins>
     </build>
