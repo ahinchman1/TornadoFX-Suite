@@ -1,5 +1,6 @@
 # TornadoFX-Suite (Stage 1)
 Automated UI test generation for TornadoFX.
+**Note**:  For the time being, the scope of this project is kept small.  A user should be able to input their TornadoFX project and have tests generated for inputs like textfields, checkboxes, buttons, and so on
 
 ![alttext](https://github.com/ahinchman1/TornadoFX-Suite/blob/master/tornadofx-suite.png)
 
