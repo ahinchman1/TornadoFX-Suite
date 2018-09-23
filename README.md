@@ -9,3 +9,41 @@ Testing has always been a challenge for engineers - many of us are opiniated on 
 * Stage 2: creating a DSL to create an easy structure for writing tests
 * Stage 3: using machine-learning to learn what makes more useful testing rules
 
+Interested in the project? It's open source and anyone is welcome to contribute! Feel free to head over to the Issues page to see what's going on.
+
+## Collaboration Standards
+You'll notice some classifications for the way the issues are labeled.  Ideally, every issue should be formatted a certain way. I just made this up. If you guys have something you like better let me know. You'll often see the issues necessary for this project to move forward in the format of 
+
+`Stage{num}@[category]`:
+* FEATURE
+* BUG
+* INVESTIGATION
+
+And when it comes to naming branches to address these issues:
+`bug_[bugNumber]/[name of bug]`
+`enhancement_[enhancement]/[name of enhancement]`
+and so on.
+
+### Features
+
+The roadmap for the MVP, give or take.
+
+### Bugs
+I like to go with Yegor Bugayenko's definition, as quoted in his [blog](https://www.yegor256.com/2018/02/06/where-to-find-more-bugs.html):
+
+* **Lack of functionality.** If a class ([yegor256/cactoos#558](https://github.com/yegor256/cactoos/issues/558)) or the entire module ([yegor256/cactoos#399](https://github.com/yegor256/cactoos/issues/399)) doesn’t provide the functionality you expect it to have, it’s a bug.
+
+* **Lack of tests.** If a class doesn’t have a unit test ([yegor256/takes#43](https://github.com/yegor256/takes/issues/43)) or the existing test doesn’t cover some critical aspects of the class ([yegor256/cactoos#375](https://github.com/yegor256/cactoos/issues/375)), it’s a bug.
+
+* **Lack of documentation.** If, say, a Javadoc block for a class does not clearly explain to you how to use the class, or the entire module is not documented well ([yegor256/takes#790](https://github.com/yegor256/takes/issues/790)), it’s a bug.
+
+* **Suboptimal implementation.** If a piece of code doesn’t look good to you, and you think it can be refactored to look better, it’s a bug.
+
+* **Design inconsistency.** If the design doesn’t look logical to you ([yegor256/cactoos#436](https://github.com/yegor256/cactoos/issues/436)) and you know how it can be improved, it’s a bug.
+
+* **Naming is weird.** If class, variable or package names don’t look consistent and obvious to you, and you know how they can be fixed ([yegor256/cactoos#274] (https://github.com/yegor256/cactoos/issues/274)), it’s a bug.
+
+* **Unstable test.** If a unit test fails sporadically ([yegor256/takes#506](https://github.com/yegor256/takes/issues/506)) or doesn’t work in some particular environment ([yegor256/jpeek#151](https://github.com/yegor256/jpeek/issues/151])), it’s a bug.
+
+## Investigation
+Is there something down the road that might be relevant to later stages? Go ahead in put in a issue for discussion/invesigation.
