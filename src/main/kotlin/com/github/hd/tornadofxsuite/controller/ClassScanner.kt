@@ -30,7 +30,7 @@ class ClassScanner: Controller() {
     }
 
     private fun breakDownClass(someClass: Node.Decl.Structured, file: Node.File) {
-        val className = (someClass as Node.Decl.Structured).name
+        val className = someClass.name
 
         (file.decls[0] as Node.Decl.Structured).members.forEach {
             val memberName = ""

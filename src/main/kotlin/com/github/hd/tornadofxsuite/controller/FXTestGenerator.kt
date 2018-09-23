@@ -49,7 +49,7 @@ class FXTestGenerator: Controller() {
                 println("CLASS NAME: " + it.className)
                 println("CLASS PROPERTIES: ")
                 it.classProperties.forEach { property ->
-                    println("\t" + property)
+                    println("\t" + property.propertyName + ": " + property.propertyType)
                 }
                 println("CLASS METHODS: ")
                 it.classMethods.forEach { method ->
