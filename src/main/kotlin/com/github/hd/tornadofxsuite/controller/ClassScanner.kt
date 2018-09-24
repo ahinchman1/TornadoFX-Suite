@@ -51,6 +51,7 @@ class ClassScanner: Controller() {
                 "readOnly=true, typeParams=[], receiverType=null, vars=[Var(name="
         val privateFirstFalseBit = "Property(mods=[Lit(keyword=PRIVATE)], " +
                 "readOnly=false, typeParams=[], receiverType=null, vars=[Var(name="
+        val root = "Property(mods=[Lit(keyword=OVERRIDE)], readOnly=true, typeParams=[], receiverType=null, vars=[Var(name=root"
         val secondBit = "expr=Call(expr=Name(name="
         val string = property.toString()
 
@@ -63,6 +64,10 @@ class ClassScanner: Controller() {
                 string.contains(firstFalseBit) -> string.split(firstFalseBit)[1]
                 string.contains(privateFirstFalseBit) -> string.split(privateFirstFalseBit)[1]
                 else -> "" //TODO error handling?
+            }
+
+            if (string.contains(root)) {
+                identifyControls(property)
             }
 
             val isolatedName = splitToName.split(",")[0]
@@ -78,5 +83,11 @@ class ClassScanner: Controller() {
             // TODO - look into TornadoFX to see if it only accepts up to 80 char in a string
             //val json = loadJsonObject("""$string""")
         }
+    }
+
+    // recursively loop in the order of lambda.func.block.stmts if it's possible
+    fun identifyControls(property: Node.Decl.Property) {
+        // gets the list items.
+        val itemsInView = (property.expr as Node.Expr.Call).lambda?.func?.block?.stmts
     }
 }
