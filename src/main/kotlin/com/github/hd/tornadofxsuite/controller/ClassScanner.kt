@@ -11,14 +11,12 @@ import tornadofx.*
  */
 class ClassScanner: Controller() {
 
-    var classMembers = ArrayList<String>()
     var bareClasses = ArrayList<BareBreakDown>()
-    var classProperties = ArrayList<ClassProperties>()
     var independentFunctions = ArrayList<String>()
+    var bareModelClasses = ArrayList<BareBreakDown>()
 
     fun parseAST(textFile: String) {
         val file = Parser.parseFile(textFile)
-
         // store class names and their methods
         file.decls.forEach {
             when (it) {
@@ -31,20 +29,20 @@ class ClassScanner: Controller() {
 
     private fun breakDownClass(someClass: Node.Decl.Structured, file: Node.File) {
         val className = someClass.name
+        val classProperties = ArrayList<ClassProperties>()
+        var classMembers = ArrayList<String>()
 
         (file.decls[0] as Node.Decl.Structured).members.forEach {
-            val memberName = ""
             when (it) {
                 is Node.Decl.Structured -> println("this is probably a companion object")
-                is Node.Decl.Property -> convertToJsonProperty(it) // TODO: fill out later
+                is Node.Decl.Property -> convertToJsonProperty(it, classProperties)
                 is Node.Decl.Func -> classMembers.add(it.name)
-
             }
         }
         bareClasses.add(BareBreakDown(className, classProperties, classMembers))
     }
 
-    private fun convertToJsonProperty(property: Node.Decl.Property) {
+    private fun convertToJsonProperty(property: Node.Decl.Property, propList: ArrayList<ClassProperties>) {
         val firstTrueBit = "Property(mods=[], readOnly=true, typeParams=[], " +
                 "receiverType=null, vars=[Var(name="
         val firstFalseBit = "Property(mods=[], readOnly=false, typeParams=[], " +
@@ -59,27 +57,26 @@ class ClassScanner: Controller() {
         // it ain't stupid if it works shut up
         if (string.contains(firstTrueBit) || string.contains(secondBit) ||
                 string.contains(privateFirstTrueBit) || string.contains(privateFirstFalseBit)) {
-            println(string)
             val splitToName = when {
                 string.contains(firstTrueBit) -> string.split(firstTrueBit)[1]
                 string.contains(privateFirstTrueBit) -> string.split(privateFirstTrueBit)[1]
                 string.contains(firstFalseBit) -> string.split(firstFalseBit)[1]
                 string.contains(privateFirstFalseBit) -> string.split(privateFirstFalseBit)[1]
-                else -> return
+                else -> "" //TODO error handling?
             }
 
             val isolatedName = splitToName.split(",")[0]
             if (string.contains(secondBit)) {
                 val splitToType = string.split(secondBit)
-                val isolatedType = splitToType[1].split(")")[0]
+                var isolatedType = splitToType[1].split(")")[0]
 
-                classProperties.add(ClassProperties(isolatedName, isolatedType));
+                if (isolatedType == "inject") {
+                    isolatedType = splitToType[0].split(",")[6].split("name=")[1]
+                }
+                propList.add(ClassProperties(isolatedName, isolatedType))
             }
+            // TODO - look into TornadoFX to see if it only accepts up to 80 char in a string
+            //val json = loadJsonObject("""$string""")
         }
-
-        // TODO - look into TornadoFX to see if it only accepts up to 80 char in a string
-        //val json = loadJsonObject("""$string""")
-
-
     }
 }

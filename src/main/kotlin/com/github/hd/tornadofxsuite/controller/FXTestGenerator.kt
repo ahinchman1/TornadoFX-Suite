@@ -1,7 +1,6 @@
 package com.github.hd.tornadofxsuite.controller
 
 import com.example.demo.controller.ClassScanner
-import com.github.hd.tornadofxsuite.model.BareBreakDown
 import com.github.hd.tornadofxsuite.view.MainView
 import com.intellij.psi.PsiElement
 import javafx.event.EventTarget
@@ -67,7 +66,6 @@ class FXTestGenerator: Controller() {
         return !fileText.contains("ApplicationTest()")
                 && !fileText.contains("src/test")
                 && !fileText.contains("@Test")
-                && !(fileText.contains("App("))
     }
 
     fun detectModels(psiElement: PsiElement) {
