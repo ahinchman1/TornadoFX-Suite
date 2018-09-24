@@ -48,9 +48,9 @@ class ClassScanner: Controller() {
         val firstFalseBit = "Property(mods=[], readOnly=false, typeParams=[], " +
                 "receiverType=null, vars=[Var(name="
         val privateFirstTrueBit = "Property(mods=[Lit(keyword=PRIVATE)], " +
-                "readOnly=true, typeParams=[], receiverType=null, vars=[Var("
+                "readOnly=true, typeParams=[], receiverType=null, vars=[Var(name="
         val privateFirstFalseBit = "Property(mods=[Lit(keyword=PRIVATE)], " +
-                "readOnly=false, typeParams=[], receiverType=null, vars=[Var("
+                "readOnly=false, typeParams=[], receiverType=null, vars=[Var(name="
         val secondBit = "expr=Call(expr=Name(name="
         val string = property.toString()
 
