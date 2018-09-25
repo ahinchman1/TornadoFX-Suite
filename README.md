@@ -10,7 +10,7 @@ Testing has always been a challenge for engineers - many of us are opiniated on 
 * Stage 2: creating a DSL to create an easy structure for writing tests
 * Stage 3: using machine-learning to learn what makes more useful testing rules
 
-Interested in the project? It's open source and anyone is welcome to contribute! Feel free to head over to the Issues page to see what's going on.
+Interested in the project? It's open source and anyone is welcome to contribute! Feel free to head over to the [Issues page](https://github.com/ahinchman1/TornadoFX-Suite/issues) to see what's going on.
 
 ## Collaboration Standards
 You'll notice some classifications for the way the issues are labeled.  Ideally, every issue should be formatted a certain way. I just made this up. If you guys have something you like better let me know. You'll often see the issues necessary for this project to move forward in the format of 
@@ -27,7 +27,7 @@ and so on.
 
 ### Features
 
-The roadmap for the MVP, give or take.
+[Features](https://github.com/ahinchman1/TornadoFX-Suite/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+FEATURE) are issues that are required to complete a stage.
 
 ### Bugs
 I like to go with Yegor Bugayenko's definition, as quoted in his [blog](https://www.yegor256.com/2018/02/06/where-to-find-more-bugs.html):
