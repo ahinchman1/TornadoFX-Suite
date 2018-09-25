@@ -1,7 +1,9 @@
 package com.example.demo.controller
 
 import com.github.hd.tornadofxsuite.model.BareBreakDown
+import com.github.hd.tornadofxsuite.model.CONTROLS
 import com.github.hd.tornadofxsuite.model.ClassProperties
+import com.github.hd.tornadofxsuite.model.MVC
 import kastree.ast.Node
 import kastree.ast.psi.Parser
 import tornadofx.*
@@ -14,6 +16,7 @@ class ClassScanner: Controller() {
     var bareClasses = ArrayList<BareBreakDown>()
     var independentFunctions = ArrayList<String>()
     var bareModelClasses = ArrayList<BareBreakDown>()
+    var detectedControls = ArrayList<String>()
 
     fun parseAST(textFile: String) {
         val file = Parser.parseFile(textFile)
@@ -30,19 +33,20 @@ class ClassScanner: Controller() {
     private fun breakDownClass(someClass: Node.Decl.Structured, file: Node.File) {
         val className = someClass.name
         val classProperties = ArrayList<ClassProperties>()
-        var classMembers = ArrayList<String>()
+        val classMembers = ArrayList<String>()
 
+        // Save for all files
         (file.decls[0] as Node.Decl.Structured).members.forEach {
             when (it) {
                 is Node.Decl.Structured -> println("this is probably a companion object")
-                is Node.Decl.Property -> convertToJsonProperty(it, classProperties)
+                is Node.Decl.Property -> convertToJsonProperty(it, classProperties, file)
                 is Node.Decl.Func -> classMembers.add(it.name)
             }
         }
         bareClasses.add(BareBreakDown(className, classProperties, classMembers))
     }
 
-    private fun convertToJsonProperty(property: Node.Decl.Property, propList: ArrayList<ClassProperties>) {
+    private fun convertToJsonProperty(property: Node.Decl.Property, propList: ArrayList<ClassProperties>, file: Node.File) {
         val firstTrueBit = "Property(mods=[], readOnly=true, typeParams=[], " +
                 "receiverType=null, vars=[Var(name="
         val firstFalseBit = "Property(mods=[], readOnly=false, typeParams=[], " +
@@ -63,11 +67,15 @@ class ClassScanner: Controller() {
                 string.contains(privateFirstTrueBit) -> string.split(privateFirstTrueBit)[1]
                 string.contains(firstFalseBit) -> string.split(firstFalseBit)[1]
                 string.contains(privateFirstFalseBit) -> string.split(privateFirstFalseBit)[1]
-                else -> "" //TODO error handling?
-            }
-
-            if (string.contains(root)) {
-                identifyControls(property)
+                else -> {
+                    // Detect view controls, return root
+                    if (((file.decls[0] as Node.Decl.Structured)
+                                    .parents[0] as Node.Decl.Structured.Parent.CallConstructor)
+                                    .type.pieces[0].name == MVC.View.name) {
+                        identifyControls((property.expr as Node.Expr.Call).lambda!!)
+                    }
+                    "root"
+                }
             }
 
             val isolatedName = splitToName.split(",")[0]
@@ -86,8 +94,37 @@ class ClassScanner: Controller() {
     }
 
     // recursively loop in the order of lambda.func.block.stmts if it's possible
-    fun identifyControls(property: Node.Decl.Property) {
+    fun identifyControls(lambda: Node.Expr.Call.TrailLambda) {
         // gets the list items.
-        val itemsInView = (property.expr as Node.Expr.Call).lambda?.func?.block?.stmts
+        val itemsInView = lambda.func.block?.stmts
+
+        // this is not great, but for now I only consider lambda elements.
+        itemsInView?.forEach {
+            val element = ((it as Node.Stmt.Expr) // TODO: DEBUG HERE - java.lang.ClassCastException: kastree.ast.Node$Expr$BinaryOp cannot be cast to kastree.ast.Node$Expr$Call
+                    .expr as Node.Expr.Call)
+
+            // if there are additional blocks, pick those up too.
+            if (element.lambda != null) {
+                val name = ((it
+                        .expr as Node.Expr.Call)
+                        .expr as Node.Expr.Name)
+                        .name
+                //identifyControls()
+                addControls<CONTROLS>(name)
+            }
+        }
+
+        detectedControls.forEach {
+            println(it)
+        }
+    }
+
+    // using the enum class to check for control values here
+    private inline fun <reified T : Enum<T>> addControls(control: String) {
+        enumValues<T>().forEach {
+            if (control.toLowerCase() == (it.name).toLowerCase()) {
+                detectedControls.add(control)
+            }
+        }
     }
 }
