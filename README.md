@@ -16,9 +16,11 @@ Interested in the project? It's open source and anyone is welcome to contribute!
 You'll notice some classifications for the way the issues are labeled.  Ideally, every issue should be formatted a certain way. I just made this up. If you guys have something you like better let me know. You'll often see the issues necessary for this project to move forward in the format of 
 
 `Stage{num}@[category]`:
-* FEATURE
-* BUG
-* INVESTIGATION
+* `FEATURE`
+* `BUG`
+* `INVESTIGATION`
+
+Where a `category` is just an arbitary set of concerns [`FEATURE`, `BUG`, `INVESTIGATION`] I made to address different kinds of issues as this project progresses.
 
 And when it comes to naming branches to address these issues:
 `bug_[bugNumber]/[name of bug]`
