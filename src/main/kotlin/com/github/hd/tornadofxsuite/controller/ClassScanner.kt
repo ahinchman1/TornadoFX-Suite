@@ -145,8 +145,6 @@ class ClassScanner: Controller() {
                     val controlCollection = ArrayList<String>()
                     detectedViewControls[className] = controlCollection
                 }
-
-
             }
         }
     }

@@ -1,8 +1,12 @@
 package com.github.hd.tornadofxsuite.controller
 
 import com.example.demo.controller.ClassScanner
+import com.github.hd.tornadofxsuite.app.Styles.Companion.translucent
+import com.github.hd.tornadofxsuite.model.TornadoFXInputsScope
+import com.github.hd.tornadofxsuite.view.Dialog
 import com.github.hd.tornadofxsuite.view.FetchCompletedEvent
 import com.github.hd.tornadofxsuite.view.MainView
+import javafx.scene.layout.StackPane
 import tornadofx.*
 import java.io.BufferedReader
 import java.io.File
@@ -34,12 +38,43 @@ class FXTestGenerator: Controller() {
                         fileOutputRead(it)
                     }
         }
+         consoleLog()
+         askUserDialog()
         //generateTest()
     }
 
     private fun fileOutputRead(path: Path) {
         val file = File(path.toUri())
         readFiles(file)
+    }
+
+    private fun consoleLog() {
+        // print and format classes
+        scanner.bareClasses.forEach {
+            println("CLASS NAME: " + it.className)
+            println("CLASS PROPERTIES: ")
+            it.classProperties.forEach { property ->
+                println("\t" + property.propertyName + ": " + property.propertyType)
+            }
+            println("CLASS METHODS: ")
+            it.classMethods.forEach { method ->
+                println("\t" + method)
+            }
+        }
+
+        if (scanner.detectedViewControls.size > 0) {
+            println("DETECTED LAMBDA ELEMENTS IN PROJECT: ")
+            scanner.detectedViewControls.forEach {
+                println(it)
+            }
+        }
+
+        if (scanner.detectedViewControls.size > 0) {
+            println("DERIVING INPUTS: ")
+            scanner.detectedViewControls.forEach {
+                println(it)
+            }
+        }
     }
 
     private fun readFiles(file: File) {
@@ -51,33 +86,6 @@ class FXTestGenerator: Controller() {
             view.console.items.add(fileText)
             view.console.items.add("===================================================================")
             scanner.parseAST(fileText)
-
-            // print and format classes
-            scanner.bareClasses.forEach {
-                println("CLASS NAME: " + it.className)
-                println("CLASS PROPERTIES: ")
-                it.classProperties.forEach { property ->
-                    println("\t" + property.propertyName + ": " + property.propertyType)
-                }
-                println("CLASS METHODS: ")
-                it.classMethods.forEach { method ->
-                    println("\t" + method)
-                }
-            }
-
-            if (scanner.detectedViewControls.size > 0) {
-                println("DETECTED LAMBDA ELEMENTS IN PROJECT: ")
-                scanner.detectedViewControls.forEach {
-                    println(it)
-                }
-            }
-
-            if (scanner.detectedViewControls.size > 0) {
-                println("DERIVING INPUTS: ")
-                scanner.detectedViewControls.forEach {
-                    println(it)
-                }
-            }
         }
     }
 
@@ -87,5 +95,12 @@ class FXTestGenerator: Controller() {
         return !fileText.contains("ApplicationTest()")
                 && !fileText.contains("src/test")
                 && !fileText.contains("@Test")
+    }
+
+    private fun askUserDialog() {
+        view.overlay.addClass(translucent)
+        val scope = TornadoFXInputsScope()
+        scope.collection = scanner.detectedViewControls
+        find(Dialog::class, scope).openModal()
     }
 }

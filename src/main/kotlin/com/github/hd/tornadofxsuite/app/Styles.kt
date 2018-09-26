@@ -10,6 +10,7 @@ class Styles : Stylesheet() {
         val heading by cssclass()
         val mainScreen by cssclass()
         val top by cssclass()
+        val translucent by cssclass()
     }
 
     init {
@@ -43,6 +44,11 @@ class Styles : Stylesheet() {
                 backgroundColor += Color.TRANSPARENT
             }
             fitToWidth = true
+        }
+
+        translucent {
+            fill = c("222")
+            opacity = 0.4
         }
     }
 }

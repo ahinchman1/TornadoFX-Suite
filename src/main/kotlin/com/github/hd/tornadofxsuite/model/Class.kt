@@ -67,7 +67,7 @@ class TornadoFXInputsModel: ItemViewModel<TornadoFXInputs>() {
 }
 
 class TornadoFXInputsScope:  Scope() {
-    val model = TornadoFXInputsModel()
+    var collection = HashMap<String, ArrayList<String>>()
 }
 
 
