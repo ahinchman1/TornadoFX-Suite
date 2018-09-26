@@ -1,6 +1,9 @@
 package com.github.hd.tornadofxsuite.model
 
 import com.google.gson.JsonObject
+import javafx.beans.property.SimpleObjectProperty
+import javafx.beans.property.SimpleStringProperty
+import tornadofx.*
 import java.util.*
 
 /*data class ClassBreakDown(val className: String,
@@ -47,7 +50,27 @@ enum class COMPONENTS {
 enum class INPUTS {
     Form, TextField, DateField, Button, Action,
     RadioButton, ToggleButton, ComboButton, Checkbox,
+    Item, Paginator, PasswordField
 }
+
+class TornadoFXInputs(viewClass: String, inputs: ArrayList<String>) {
+    val viewClassProperty = SimpleStringProperty(this, "", viewClass)
+    var viewClass by viewClassProperty
+
+    val inputsProperty = SimpleObjectProperty(this, "", inputs)
+    var inputs by inputsProperty
+}
+
+class TornadoFXInputsModel: ItemViewModel<TornadoFXInputs>() {
+    val ownerName = bind(TornadoFXInputs::viewClassProperty)
+    val catName = bind(TornadoFXInputs::inputsProperty)
+}
+
+class TornadoFXInputsScope:  Scope() {
+    val model = TornadoFXInputsModel()
+}
+
+
 
 
 

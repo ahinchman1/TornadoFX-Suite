@@ -2,9 +2,12 @@ package com.github.hd.tornadofxsuite.view
 
 import com.github.hd.tornadofxsuite.app.Styles
 import com.github.hd.tornadofxsuite.controller.FXTestGenerator
+import javafx.geometry.Pos
 import javafx.scene.control.ListView
 import tornadofx.*
 import java.io.File
+
+class FetchCompletedEvent : FXEvent()
 
 class MainView : View("TornadoFX-Suite") {
     val consolePath = System.getProperty("os.name") + " ~ " + System.getProperty("user.name") + ": "
@@ -23,11 +26,23 @@ class MainView : View("TornadoFX-Suite") {
             }
         }.addClass(Styles.top)
 
-        console = listview {
-            items.add(consolePath)
+        stackpane {
             vboxConstraints {
                 marginTopBottom(40.0)
                 marginLeftRight(40.0)
+            }
+            vbox {
+                label("Fetching")
+                progressindicator()
+                alignment = Pos.TOP_CENTER
+                spacing = 4.0
+                paddingTop = 10.0
+            }
+            console = listview {
+                items.add(consolePath)
+                subscribe<FetchCompletedEvent> {
+                    this@listview.translateYProperty().animate(endValue = 0.0, duration = .3.seconds)
+                }
             }
         }
 
@@ -38,6 +53,7 @@ class MainView : View("TornadoFX-Suite") {
                     initialDirectory = File(System.getProperty("user.home"))
                 }?.let {
                     fxTestGenerator.walk(it.absolutePath)
+                    //fxTestGenerator.fetchAsync(it)
                 }
                 fxTestGenerator.kotlinFiles.forEach { println(it) }
             }

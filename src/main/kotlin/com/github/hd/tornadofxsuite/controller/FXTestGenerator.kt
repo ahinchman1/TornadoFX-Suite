@@ -1,9 +1,8 @@
 package com.github.hd.tornadofxsuite.controller
 
 import com.example.demo.controller.ClassScanner
+import com.github.hd.tornadofxsuite.view.FetchCompletedEvent
 import com.github.hd.tornadofxsuite.view.MainView
-import com.intellij.psi.PsiElement
-import javafx.event.EventTarget
 import tornadofx.*
 import java.io.BufferedReader
 import java.io.File
@@ -16,7 +15,17 @@ class FXTestGenerator: Controller() {
     private val view: MainView by inject()
     private val scanner: ClassScanner by inject()
 
-    fun walk(path: String) {
+    fun fetchAsync(file: File) {
+        runAsync {
+            walk(file.absolutePath)
+        } ui {
+            fire(FetchCompletedEvent())
+        } fail {
+            println( "Cannot read file: $file")
+        }
+    }
+
+     fun walk(path: String) {
         view.console.items.clear()
         view.console.items.add("SEARCHING FILES...")
         Files.walk(Paths.get(path)).use { allFiles ->
@@ -56,7 +65,19 @@ class FXTestGenerator: Controller() {
                 }
             }
 
+            if (scanner.detectedViewControls.size > 0) {
+                println("DETECTED LAMBDA ELEMENTS IN PROJECT: ")
+                scanner.detectedViewControls.forEach {
+                    println(it)
+                }
+            }
 
+            if (scanner.detectedViewControls.size > 0) {
+                println("DERIVING INPUTS: ")
+                scanner.detectedViewControls.forEach {
+                    println(it)
+                }
+            }
         }
     }
 
@@ -66,17 +87,5 @@ class FXTestGenerator: Controller() {
         return !fileText.contains("ApplicationTest()")
                 && !fileText.contains("src/test")
                 && !fileText.contains("@Test")
-    }
-
-    fun detectModels(psiElement: PsiElement) {
-        // TODO
-    }
-
-    fun detectControls() {
-        // TODO
-    }
-
-    fun detectEvents(eventTarget: EventTarget) {
-        // TODO
     }
 }

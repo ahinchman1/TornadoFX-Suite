@@ -2,6 +2,8 @@ package com.example.demo.controller
 
 import com.github.hd.tornadofxsuite.model.BareBreakDown
 import com.github.hd.tornadofxsuite.model.ClassProperties
+import com.github.hd.tornadofxsuite.model.INPUTS
+import com.github.hd.tornadofxsuite.model.TornadoFXInputs
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
@@ -19,7 +21,8 @@ class ClassScanner: Controller() {
 
     var bareClasses = ArrayList<BareBreakDown>()
     var independentFunctions = ArrayList<String>()
-    var detectedViewControls = ArrayList<String>()
+    var detectedInputs = ArrayList<String>()
+    var detectedViewControls = HashMap<String, ArrayList<String>>()
 
     fun parseAST(textFile: String) {
         val file = Parser.parseFile(textFile)
@@ -42,7 +45,7 @@ class ClassScanner: Controller() {
         (file.decls[0] as Node.Decl.Structured).members.forEach {
             when (it) {
                 is Node.Decl.Structured -> println("this is probably a companion object")
-                is Node.Decl.Property -> convertToJsonProperty(it, classProperties, file)
+                is Node.Decl.Property -> convertToJsonProperty(it, classProperties, className)
                 is Node.Decl.Func -> classMembers.add(it.name)
             }
         }
@@ -50,7 +53,7 @@ class ClassScanner: Controller() {
     }
 
     // TODO - refactor with the same strategy used in detectLambdaControls
-    private fun convertToJsonProperty(property: Node.Decl.Property, propList: ArrayList<ClassProperties>, file: Node.File) {
+    private fun convertToJsonProperty(property: Node.Decl.Property, propList: ArrayList<ClassProperties>, className: String) {
         val firstTrueBit = "Property(mods=[], readOnly=true, typeParams=[], " +
                 "receiverType=null, vars=[Var(name="
         val firstFalseBit = "Property(mods=[], readOnly=false, typeParams=[], " +
@@ -76,11 +79,8 @@ class ClassScanner: Controller() {
                 string.contains(privateFirstFalseBit) -> string.split(privateFirstFalseBit)[1]
                 else -> {
                     // Detect view controls, return root
-                    detectLambdaControls(nodesElement.asJsonObject)
-                    println("DETECTED LAMBDA ELEMENTS: ")
-                    detectedViewControls.forEach {
-                        println(it)
-                    }
+                    detectLambdaControls(nodesElement.asJsonObject, className)
+
                     "root"
                 }
             }
@@ -95,21 +95,19 @@ class ClassScanner: Controller() {
                 }
                 propList.add(ClassProperties(isolatedName, isolatedType))
             }
-            // TODO - look into TornadoFX to see if it only accepts up to 80 char in a string
-            //val json = loadJsonObject("""$string""")
         }
     }
 
     // recursively loop in the order of lambda.func.block.stmts
-    private fun detectLambdaControls(node: JsonObject) {
+    private fun detectLambdaControls(node: JsonObject, className: String) {
         val root = node.get("expr")
 
         if (root.asJsonObject.get("lambda") != null) {
             val rootName = root.asJsonObject
                     .get("expr").asJsonObject
-                    .get("name")
+                    .get("name").asString
 
-            detectedViewControls.add(rootName.asString)
+            addControls<INPUTS>(rootName, className)
 
             // get elements in lambda
             val lambda = root.asJsonObject.get("lambda").asJsonObject
@@ -118,16 +116,37 @@ class ClassScanner: Controller() {
                     .get("stmts") as JsonArray
 
             elements.forEach {
-                detectLambdaControls(it.asJsonObject)
+                detectLambdaControls(it.asJsonObject, className)
             }
         }
     }
 
+    fun detectModels() {
+        // TODO
+    }
+
+    fun detectControls() {
+        // TODO
+    }
+
+    fun detectEvents() {
+        // TODO
+    }
+
     // using the enum class to check for control values here
-    private inline fun <reified T : Enum<T>> addControls(control: String) {
-        enumValues<T>().forEach {
+    private inline fun <reified T : Enum<T>> addControls(control: String, className: String) {
+        enumValues<T>().forEach { it ->
             if (control.toLowerCase() == (it.name).toLowerCase()) {
-                detectedViewControls.add(control)
+                detectedInputs.add(control)
+
+                if (detectedViewControls.containsKey(className)) {
+                    detectedViewControls[className]?.add(control)
+                } else {
+                    val controlCollection = ArrayList<String>()
+                    detectedViewControls[className] = controlCollection
+                }
+
+
             }
         }
     }
