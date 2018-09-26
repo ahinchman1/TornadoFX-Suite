@@ -1,5 +1,6 @@
 package com.github.hd.tornadofxsuite.model
 
+import com.google.gson.JsonObject
 import java.util.*
 
 /*data class ClassBreakDown(val className: String,
@@ -43,8 +44,10 @@ enum class COMPONENTS {
     DATAGRID, IMAGEVIEW
 }
 
-enum class CONTROLS {
-    LABEL, FIELDSET, FIELD, FORM, TEXTFIELD, DATEPICKER,
-    RADIOBUTTON, TOGGLEBUTTON, COMBOBOX, CHECKBOX,
+enum class INPUTS {
+    Form, TextField, DateField, Button, Action,
+    RadioButton, ToggleButton, ComboButton, Checkbox,
 }
+
+
 
