@@ -7,6 +7,7 @@ import com.github.hd.tornadofxsuite.view.Dialog
 import com.github.hd.tornadofxsuite.view.FetchCompletedEvent
 import com.github.hd.tornadofxsuite.view.MainView
 import javafx.scene.layout.StackPane
+import javafx.util.Duration
 import tornadofx.*
 import java.io.BufferedReader
 import java.io.File
@@ -19,6 +20,7 @@ class FXTestGenerator: Controller() {
     private val view: MainView by inject()
     private val scanner: ClassScanner by inject()
 
+    // TODO separate UI from AST parsing
     fun fetchAsync(file: File) {
         runAsync {
             walk(file.absolutePath)
@@ -98,7 +100,7 @@ class FXTestGenerator: Controller() {
     }
 
     private fun askUserDialog() {
-        view.overlay.addClass(translucent)
+        view.overlay.fade(Duration.millis(2000.0), .5)
         val scope = TornadoFXInputsScope()
         scope.collection = scanner.detectedViewControls
         find(Dialog::class, scope).openModal()

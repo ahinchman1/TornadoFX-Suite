@@ -1,27 +1,23 @@
 package com.github.hd.tornadofxsuite.view
 
 import com.github.hd.tornadofxsuite.app.Styles
-import com.github.hd.tornadofxsuite.app.Styles.Companion.translucent
 import com.github.hd.tornadofxsuite.controller.FXTestGenerator
 import javafx.geometry.Pos
 import javafx.scene.control.ListView
 import javafx.scene.layout.HBox
+import javafx.util.Duration
 import tornadofx.*
 import java.io.File
 
 class FetchCompletedEvent : FXEvent()
 
-class MainView : View("TornadoFX-Suite") {
+class MainView : View() {
     val consolePath = System.getProperty("os.name") + " ~ " + System.getProperty("user.name") + ": "
     lateinit var console: ListView<String>
     private val fxTestGenerator: FXTestGenerator by inject()
     lateinit var overlay: HBox
 
     override val root = stackpane {
-        overlay = hbox {
-            prefWidth = 800.0
-            prefHeight = 600.0
-        }
         vbox {
             prefWidth = 800.0
             prefHeight = 600.0
@@ -48,14 +44,12 @@ class MainView : View("TornadoFX-Suite") {
                 }
                 console = listview {
                     items.add(consolePath)
-                    subscribe<FetchCompletedEvent> {
-                        this@listview.translateYProperty().animate(endValue = 0.0, duration = .3.seconds)
-                    }
                 }
             }
 
-            button("Upload your project directory.") {
+            button("Upload your project.") {
                 setOnAction {
+                    overlay.fade(Duration.millis(2000.0), .5)
                     chooseDirectory {
                         title = "Choose a TornadoFX Project"
                         initialDirectory = File(System.getProperty("user.home"))
@@ -71,7 +65,17 @@ class MainView : View("TornadoFX-Suite") {
                 }
             }
 
-        }.addClass(Styles.mainScreen)
+        }.addClass(Styles.main)
+
+        overlay = hbox {
+            prefWidth = 800.0
+            prefHeight = 600.0
+            isMouseTransparent = true
+            style {
+                backgroundColor += c("#222")
+                opacity = 0.0
+            }
+        }
     }
 
 }

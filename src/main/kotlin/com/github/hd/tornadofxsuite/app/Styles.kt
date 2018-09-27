@@ -8,47 +8,50 @@ import tornadofx.*
 class Styles : Stylesheet() {
     companion object {
         val heading by cssclass()
-        val mainScreen by cssclass()
+        val main by cssclass()
         val top by cssclass()
         val translucent by cssclass()
+        val dialog by cssclass()
     }
 
     init {
 
-        mainScreen {
-            backgroundColor += c("#222")
+        main {
+            backgroundColor += c("#361F27")
         }
 
         top {
-            backgroundColor += Color.PERU
+            backgroundColor += c("#DD7549")
             padding = box(20.px)
         }
 
         button {
-            backgroundColor += Color.PERU
+            backgroundColor += c("#DD7549")
             padding = box(10.px)
             alignment = Pos.CENTER
 
             and (hover) {
-                backgroundColor += c("#ad6625")
+                backgroundColor += c("#B25E3A")
             }
+            fontWeight = FontWeight.EXTRA_BOLD
         }
 
         cell {
-            backgroundColor += c("#004600")
+            backgroundColor += c("#39393A")
             textFill = Color.WHITE
         }
 
         listView {
-            and (focused, selected) {
+            and (selected) {
                 backgroundColor += Color.TRANSPARENT
             }
+            backgroundColor += c("#39393A")
             fitToWidth = true
         }
 
-        translucent {
-            fill = c("222")
-            opacity = 0.4
+        s(listCell, listCell and even, listCell and odd,
+                listCell and selected) {
+            backgroundColor += Color.TRANSPARENT
         }
     }
 }
