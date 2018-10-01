@@ -19,7 +19,7 @@ class Dialog : Fragment() {
         prefWidth = 600.0
         prefHeight = 400.0
 
-        label("It looks like you have some controls in your project!") {
+        label("It looks like you have some controls in your project!  Shall I create some tests for them?") {
             prefWidth = 600.0
         }.addClass(top)
 
@@ -39,13 +39,13 @@ class Dialog : Fragment() {
             }
         }
 
-        button("Ok") {
+        button("yeaaa") {
             action {
                 view.overlay.removeClass(translucent)
                 close()
             }
             vboxConstraints {
-                marginLeft = 300.0
+                marginLeft = 280.0
                 marginBottom = 20.0
             }
         }
