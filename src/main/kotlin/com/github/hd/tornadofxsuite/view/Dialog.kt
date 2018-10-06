@@ -1,17 +1,16 @@
 package com.github.hd.tornadofxsuite.view
 
-import com.example.demo.controller.ClassScanner
 import com.github.hd.tornadofxsuite.app.Styles
 import com.github.hd.tornadofxsuite.app.Styles.Companion.top
 import com.github.hd.tornadofxsuite.app.Styles.Companion.translucent
+import com.github.hd.tornadofxsuite.controller.FXTestBuilders
 import com.github.hd.tornadofxsuite.model.TornadoFXInputsScope
-import javafx.scene.control.ListView
-import javafx.scene.paint.Color
 import tornadofx.*
 
 class Dialog : Fragment() {
 
     private val view: MainView by inject()
+    private val testBuilder: FXTestBuilders by inject()
 
     override val scope = super.scope as TornadoFXInputsScope
 
@@ -41,6 +40,7 @@ class Dialog : Fragment() {
 
         button("yeaaa") {
             action {
+                testBuilder.generateTests(scope.collection)
                 view.overlay.removeClass(translucent)
                 close()
             }

@@ -7,11 +7,9 @@ import tornadofx.*
 
 class Styles : Stylesheet() {
     companion object {
-        val heading by cssclass()
         val main by cssclass()
         val top by cssclass()
         val translucent by cssclass()
-        val dialog by cssclass()
     }
 
     init {
@@ -36,6 +34,11 @@ class Styles : Stylesheet() {
             fontWeight = FontWeight.EXTRA_BOLD
         }
 
+        s(listCell, listCell and even, listCell and odd,
+                listCell and selected) {
+            backgroundColor += Color.TRANSPARENT
+        }
+
         cell {
             backgroundColor += c("#39393A")
             textFill = Color.WHITE
@@ -47,11 +50,6 @@ class Styles : Stylesheet() {
             }
             backgroundColor += c("#39393A")
             fitToWidth = true
-        }
-
-        s(listCell, listCell and even, listCell and odd,
-                listCell and selected) {
-            backgroundColor += Color.TRANSPARENT
         }
     }
 }

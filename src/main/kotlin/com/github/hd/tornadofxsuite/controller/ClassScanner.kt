@@ -12,8 +12,6 @@ import kastree.ast.Node
 import kastree.ast.psi.Parser
 import tornadofx.*
 
-
-
 /*
  * TODO - AST mappings, composition.
  */
@@ -23,6 +21,7 @@ class ClassScanner: Controller() {
     var independentFunctions = ArrayList<String>()
     var detectedInputs = ArrayList<String>()
     var detectedViewControls = HashMap<String, ArrayList<String>>()
+    var detectedViews = HashMap<String, String>()
 
     fun parseAST(textFile: String) {
         val file = Parser.parseFile(textFile)
@@ -51,50 +50,90 @@ class ClassScanner: Controller() {
         }
         bareClasses.add(BareBreakDown(className, classProperties, classMembers))
     }
-
-    // TODO - refactor with the same strategy used in detectLambdaControls
+    
     private fun convertToJsonProperty(property: Node.Decl.Property, propList: ArrayList<ClassProperties>, className: String) {
-        val firstTrueBit = "Property(mods=[], readOnly=true, typeParams=[], " +
-                "receiverType=null, vars=[Var(name="
-        val firstFalseBit = "Property(mods=[], readOnly=false, typeParams=[], " +
-                "receiverType=null, vars=[Var(name="
-        val privateFirstTrueBit = "Property(mods=[Lit(keyword=PRIVATE)], " +
-                "readOnly=true, typeParams=[], receiverType=null, vars=[Var(name="
-        val privateFirstFalseBit = "Property(mods=[Lit(keyword=PRIVATE)], " +
-                "readOnly=false, typeParams=[], receiverType=null, vars=[Var(name="
-        val root = "Property(mods=[Lit(keyword=OVERRIDE)], readOnly=true, typeParams=[], receiverType=null, vars=[Var(name=root"
         val secondBit = "expr=Call(expr=Name(name="
         val string = property.toString()
 
         val gson = Gson()
         val nodesElement: JsonElement = gson.toJsonTree(property)
 
-        // it ain't stupid if it works shut up
-        if (string.contains(firstTrueBit) || string.contains(secondBit) ||
-                string.contains(privateFirstTrueBit) || string.contains(privateFirstFalseBit)) {
-            val splitToName = when {
-                string.contains(firstTrueBit) -> string.split(firstTrueBit)[1]
-                string.contains(privateFirstTrueBit) -> string.split(privateFirstTrueBit)[1]
-                string.contains(firstFalseBit) -> string.split(firstFalseBit)[1]
-                string.contains(privateFirstFalseBit) -> string.split(privateFirstFalseBit)[1]
-                else -> {
-                    // Detect view controls, return root
-                    detectLambdaControls(nodesElement.asJsonObject, className)
+        if (string.contains(secondBit)) {
+            val node = nodesElement.asJsonObject
+            val isolated = node
+                    .get("vars")
+                    .asJsonArray
+                    .get(0).asJsonObject
+            val isolatedName = isolated.get("name").asString
 
-                    "root"
-                }
+            if (isolatedName == "root") {
+                detectLambdaControls(nodesElement.asJsonObject, className)
             }
 
-            val isolatedName = splitToName.split(",")[0]
-            if (string.contains(secondBit)) {
-                val splitToType = string.split(secondBit)
-                var isolatedType = splitToType[1].split(")")[0]
 
-                if (isolatedType == "inject") {
-                    isolatedType = splitToType[0].split(",")[6].split("name=")[1]
+            val type = node.get("expr").asJsonObject
+                    .get("expr").asJsonObject
+                    .get("name").asString
+            val isolatedType = when(type) {
+                "inject" -> isolated.get("type").asJsonObject
+                        .get("ref").asJsonObject
+                        .get("pieces").asJsonArray
+                        .get(0).asJsonObject
+                        .get("name").asString
+                // TODO - find a better way to pattern match collections
+                "listOf" -> {
+                    val listOfMemberType = node.get("expr").asJsonObject
+                            .get("typeArgs").asJsonArray
+                    if (listOfMemberType.size() > 0) {
+                        "$type( " + listOfMemberType
+                                .get(0).asJsonObject
+                                .get("ref").asJsonObject
+                                .get("pieces").asJsonArray
+                                .get(0).asJsonObject
+                                .get("name").asString + ")"
+                    } else {
+                        type
+                    }
                 }
-                propList.add(ClassProperties(isolatedName, isolatedType))
+                "HashMap" -> "$type<" + node.get("expr").asJsonObject
+                        .get("typeArgs").asJsonArray
+                        .get(0).asJsonObject
+                        .get("ref").asJsonObject
+                        .get("pieces").asJsonArray
+                        .get(0).asJsonObject
+                        .get("name").asString + "," + node.get("expr").asJsonObject
+                        .get("typeArgs").asJsonArray
+                        .get(1).asJsonObject
+                        .get("ref").asJsonObject
+                        .get("pieces").asJsonArray
+                        .get(0).asJsonObject
+                        .get("name").asString + ">"
+                "ArrayList" -> "$type<" + node.get("expr").asJsonObject
+                        .get("typeArgs").asJsonArray
+                        .get(0).asJsonObject
+                        .get("ref").asJsonObject
+                        .get("pieces").asJsonArray
+                        .get(0).asJsonObject
+                        .get("name").asString + ">"
+                "mutableListOf" -> {
+                    val listOfMemberType = node.get("expr").asJsonObject
+                            .get("typeArgs").asJsonArray
+                    if (listOfMemberType.size() > 0) {
+                        "$type( " + listOfMemberType
+                                .get(0).asJsonObject
+                                .get("ref").asJsonObject
+                                .get("pieces").asJsonArray
+                                .get(0).asJsonObject
+                                .get("name").asString + ")"
+                    } else {
+                        type
+                    }
+                }
+                "property" -> type
+                "SimpleIntegerProperty" -> type
+                else -> type
             }
+            propList.add(ClassProperties(isolatedName, isolatedType))
         }
     }
 
