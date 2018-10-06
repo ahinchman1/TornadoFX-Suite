@@ -54,7 +54,10 @@ class MainView : View() {
                         title = "Choose a TornadoFX Project"
                         initialDirectory = File(System.getProperty("user.home"))
                     }?.let {
+                        console.items.clear()
+                        console.items.add("SEARCHING FILES...")
                         fxTestGenerator.walk(it.absolutePath)
+                        fxTestGenerator.askUserDialog()
                         //fxTestGenerator.fetchAsync(it)
                     }
                     fxTestGenerator.kotlinFiles.forEach { println(it) }

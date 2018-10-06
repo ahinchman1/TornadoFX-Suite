@@ -32,17 +32,14 @@ class FXTestGenerator: Controller() {
     }
 
      fun walk(path: String) {
-        view.console.items.clear()
-        view.console.items.add("SEARCHING FILES...")
         Files.walk(Paths.get(path)).use { allFiles ->
             allFiles.filter { path -> path.toString().endsWith(".kt") }
                     .forEach {
                         fileOutputRead(it)
                     }
         }
-         consoleLog()
-         askUserDialog()
-        //generateTest()
+
+        consoleLog()
     }
 
     private fun fileOutputRead(path: Path) {
@@ -99,7 +96,7 @@ class FXTestGenerator: Controller() {
                 && !fileText.contains("@Test")
     }
 
-    private fun askUserDialog() {
+    fun askUserDialog() {
         view.overlay.fade(Duration.millis(2000.0), .5)
         val scope = TornadoFXInputsScope()
         scope.collection = scanner.detectedViewControls

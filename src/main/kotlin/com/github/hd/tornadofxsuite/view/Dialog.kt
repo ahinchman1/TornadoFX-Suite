@@ -13,6 +13,8 @@ class Dialog : Fragment() {
     private val testBuilder: FXTestBuilders by inject()
 
     override val scope = super.scope as TornadoFXInputsScope
+    // why are you not allowed to use a scope instance as a parameter?
+    private val controls = HashMap(scope.collection)
 
     override val root = vbox {
         prefWidth = 600.0
@@ -29,7 +31,7 @@ class Dialog : Fragment() {
             }
 
             listview<String> {
-                scope.collection.forEach { view ->
+                controls.forEach { view ->
                     items.add(view.key)
                     view.value.forEach { input ->
                         items.add("\t" + input)
@@ -40,7 +42,7 @@ class Dialog : Fragment() {
 
         button("yeaaa") {
             action {
-                testBuilder.generateTests(scope.collection)
+                testBuilder.generateTests(controls)
                 view.overlay.removeClass(translucent)
                 close()
             }

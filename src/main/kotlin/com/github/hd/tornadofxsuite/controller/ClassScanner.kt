@@ -3,7 +3,6 @@ package com.example.demo.controller
 import com.github.hd.tornadofxsuite.model.BareBreakDown
 import com.github.hd.tornadofxsuite.model.ClassProperties
 import com.github.hd.tornadofxsuite.model.INPUTS
-import com.github.hd.tornadofxsuite.model.TornadoFXInputs
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
@@ -21,7 +20,6 @@ class ClassScanner: Controller() {
     var independentFunctions = ArrayList<String>()
     var detectedInputs = ArrayList<String>()
     var detectedViewControls = HashMap<String, ArrayList<String>>()
-    var detectedViews = HashMap<String, String>()
 
     fun parseAST(textFile: String) {
         val file = Parser.parseFile(textFile)
@@ -31,7 +29,6 @@ class ClassScanner: Controller() {
                 is Node.Decl.Structured -> breakDownClass(it, file)
                 is Node.Decl.Func -> independentFunctions.add(it.name)
             }
-
         }
     }
 
@@ -50,7 +47,7 @@ class ClassScanner: Controller() {
         }
         bareClasses.add(BareBreakDown(className, classProperties, classMembers))
     }
-    
+
     private fun convertToJsonProperty(property: Node.Decl.Property, propList: ArrayList<ClassProperties>, className: String) {
         val secondBit = "expr=Call(expr=Name(name="
         val string = property.toString()
@@ -161,10 +158,6 @@ class ClassScanner: Controller() {
     }
 
     fun detectModels() {
-        // TODO
-    }
-
-    fun detectControls() {
         // TODO
     }
 
