@@ -1,5 +1,6 @@
 package com.github.hd.tornadofxsuite.view
 
+import com.example.demo.controller.ClassScanner
 import com.github.hd.tornadofxsuite.app.Styles
 import com.github.hd.tornadofxsuite.app.Styles.Companion.top
 import com.github.hd.tornadofxsuite.app.Styles.Companion.translucent
@@ -11,10 +12,7 @@ class Dialog : Fragment() {
 
     private val view: MainView by inject()
     private val testBuilder: FXTestBuilders by inject()
-
-    override val scope = super.scope as TornadoFXInputsScope
-    // why are you not allowed to use a scope instance as a parameter?
-    private val controls = HashMap(scope.collection)
+    private val scanner: ClassScanner by inject()
 
     override val root = vbox {
         prefWidth = 600.0
@@ -31,7 +29,7 @@ class Dialog : Fragment() {
             }
 
             listview<String> {
-                controls.forEach { view ->
+                scanner.detectedViewControls.forEach { view ->
                     items.add(view.key)
                     view.value.forEach { input ->
                         items.add("\t" + input)
@@ -42,7 +40,7 @@ class Dialog : Fragment() {
 
         button("yeaaa") {
             action {
-                testBuilder.generateTests(controls)
+                testBuilder.generateTests(scanner.detectedViewControls)
                 view.overlay.removeClass(translucent)
                 close()
             }

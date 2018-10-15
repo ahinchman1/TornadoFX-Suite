@@ -1,40 +1,43 @@
 package com.github.hd.tornadofxsuite.model
 
-import com.google.gson.JsonObject
 import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.property.SimpleStringProperty
 import tornadofx.*
 import java.util.*
 
-/*data class ClassBreakDown(val className: String,
-                          val classAccessLevel: String? = "public",
-                          val classFields: ArrayList<Property>,
-                          val classDependencies: ArrayList<DependencyInjection>,
-                          val classMethods: ArrayList<Function>)
+class BareBreakDown(className: String,
+                    classProperties: ArrayList<ClassProperties>,
+                    classMethods: ArrayList<String>) {
+    val classNameProperty = SimpleStringProperty(this, "", className)
+    var className by classNameProperty
 
-data class Property(val name: String,
-                    val accessLevel: String,
-                    val type: String,
-                    val value: Any)
+    val classPropertiesProperty = SimpleObjectProperty(this, "", classProperties)
+    var classProperties by classPropertiesProperty
 
-data class DependencyInjection(val name: String,
-                    val accessLevel: String,
-                    val dependency: String)
+    val classMethodsProperties = SimpleObjectProperty(this, "", classMethods)
+    var classMethods by classMethodsProperties
+}
 
-data class Function(val methodName: String,
-                     val methodAccess: String = "public",
-                     val methodParams: ArrayList<Parameters>,
-                     val returnsType: String = "void")
+class BareBreakDownModel : ItemViewModel<BareBreakDown>() {
+    val className = bind(BareBreakDown::classNameProperty)
+    val classProperties = bind(BareBreakDown::classPropertiesProperty)
+    val classMethods = bind(BareBreakDown::classMethodsProperties)
+}
 
-data class Parameters(val paramName: String,
-                      val paramType: String)*/
 
-data class BareBreakDown(val className: String,
-                         val classProperties: ArrayList<ClassProperties>,
-                         val classMethods: ArrayList<String>)
+class ClassProperties(propertyName: String,
+                      propertyType: String) {
+    val propertyNameProperty = SimpleStringProperty(this, "", propertyName)
+    var propertyName by propertyNameProperty
 
-data class ClassProperties(val propertyName: String,
-                           val propertyType: String)
+    val propertyTypeProperty = SimpleStringProperty(this, "", propertyType)
+    var propertyType by propertyTypeProperty
+}
+
+class ClassPropertiesModel : ItemViewModel<ClassProperties>() {
+    val propertyName = bind(ClassProperties::propertyNameProperty)
+    val propertyType = bind(ClassProperties::propertyTypeProperty)
+}
 
 // TODO implement an infinite tree structure to hold View structures
 

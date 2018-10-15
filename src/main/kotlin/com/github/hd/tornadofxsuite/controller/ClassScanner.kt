@@ -41,14 +41,20 @@ class ClassScanner: Controller() {
         (file.decls[0] as Node.Decl.Structured).members.forEach {
             when (it) {
                 is Node.Decl.Structured -> println("this is probably a companion object")
-                is Node.Decl.Property -> convertToJsonProperty(it, classProperties, className)
+                is Node.Decl.Property -> convertToMemberJsonProperty(it, classProperties, className)
                 is Node.Decl.Func -> classMembers.add(it.name)
             }
         }
         bareClasses.add(BareBreakDown(className, classProperties, classMembers))
     }
 
-    private fun convertToJsonProperty(property: Node.Decl.Property, propList: ArrayList<ClassProperties>, className: String) {
+    /***
+     * Properties -
+     *     Properties tend to have 2 types:
+     *     1) kastree.ast.Node.Expr.Call -> is a member property of a certain class
+     *     2) kastree.ast.Node.Expr.Name -> an independent member property
+     */
+    private fun convertToMemberJsonProperty(property: Node.Decl.Property, propList: ArrayList<ClassProperties>, className: String) {
         val secondBit = "expr=Call(expr=Name(name="
         val string = property.toString()
 
@@ -126,14 +132,13 @@ class ClassScanner: Controller() {
                         type
                     }
                 }
-                "property" -> type
-                "SimpleIntegerProperty" -> type
                 else -> type
             }
             propList.add(ClassProperties(isolatedName, isolatedType))
         }
     }
 
+    // For Kotlin block
     // recursively loop in the order of lambda.func.block.stmts
     private fun detectLambdaControls(node: JsonObject, className: String) {
         val root = node.get("expr")
@@ -143,6 +148,7 @@ class ClassScanner: Controller() {
                     .get("expr").asJsonObject
                     .get("name").asString
 
+            // TornadoFX specific
             addControls<INPUTS>(rootName, className)
 
             // get elements in lambda

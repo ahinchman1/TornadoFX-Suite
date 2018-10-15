@@ -98,8 +98,6 @@ class FXTestGenerator: Controller() {
 
     fun askUserDialog() {
         view.overlay.fade(Duration.millis(2000.0), .5)
-        val scope = TornadoFXInputsScope()
-        scope.collection = scanner.detectedViewControls
-        find(Dialog::class, scope).openModal()
+        find(Dialog::class).openModal()
     }
 }
