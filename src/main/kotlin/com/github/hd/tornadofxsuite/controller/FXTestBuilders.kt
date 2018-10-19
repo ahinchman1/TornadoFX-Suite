@@ -1,7 +1,5 @@
 package com.github.hd.tornadofxsuite.controller
 
-import com.example.demo.controller.ClassScanner
-import org.testfx.api.FxToolkit
 import tornadofx.*
 import java.io.File
 import java.util.ArrayList
@@ -45,7 +43,7 @@ class FXTestBuilders : Controller() {
     // start here with PBT
     private fun testStub(className: String, node: String): String {
         return "\t@Test\n" +
-                "\tfun test" + node + "()\n" +
+                "\tfun test" + node + "() { \n" +
                 "\t\t\n" +
                 "}\n\n"
     }
