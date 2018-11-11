@@ -32,7 +32,7 @@ repositories {
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-
+    compile("org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlinVersion")
     compile "no.tornado:tornadofx:$tornadofx_version"
 
     compile "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"

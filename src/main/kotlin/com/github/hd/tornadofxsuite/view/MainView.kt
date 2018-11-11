@@ -23,7 +23,7 @@ class MainView : View() {
             prefHeight = 600.0
 
             hbox {
-                imageview("file:tornado-fx-logo.png")
+                // imageview("tornado-fx-logo.png")
                 hboxConstraints {
                     marginLeftRight(20.0)
                     marginTopBottom(20.0)

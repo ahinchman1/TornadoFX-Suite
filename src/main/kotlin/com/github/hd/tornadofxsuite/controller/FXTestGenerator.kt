@@ -6,6 +6,7 @@ import com.github.hd.tornadofxsuite.model.TornadoFXInputsScope
 import com.github.hd.tornadofxsuite.view.Dialog
 import com.github.hd.tornadofxsuite.view.FetchCompletedEvent
 import com.github.hd.tornadofxsuite.view.MainView
+import com.github.mattmoore.kast.parse
 import javafx.scene.layout.StackPane
 import javafx.util.Duration
 import tornadofx.*
@@ -38,7 +39,6 @@ class FXTestGenerator: Controller() {
                         fileOutputRead(it)
                     }
         }
-
         consoleLog()
     }
 
@@ -84,13 +84,18 @@ class FXTestGenerator: Controller() {
             kotlinFiles.add(file)
             view.console.items.add(fileText)
             view.console.items.add("===================================================================")
-            scanner.parseAST(fileText)
+            //scanner.parseAST(fileText)
+            com.github.mattmoore.kast.parse(fileText)
         }
     }
 
     // TODO: Either use regex or better parsing
     // filter files for only Views and Controllers
     private fun filterFiles(fileText: String): Boolean {
+        var arr = arrayOf(1,2,3)
+        var array = arrayOf("string", "whatevers")
+        var com = arrayOf("sa", 1)
+
         return !fileText.contains("ApplicationTest()")
                 && !fileText.contains("src/test")
                 && !fileText.contains("@Test")

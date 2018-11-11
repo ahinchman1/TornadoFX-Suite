@@ -74,66 +74,81 @@ class ClassScanner: Controller() {
             }
 
 
-            val type = node.get("expr").asJsonObject
-                    .get("expr").asJsonObject
-                    .get("name").asString
-            val isolatedType = when(type) {
-                "inject" -> isolated.get("type").asJsonObject
-                        .get("ref").asJsonObject
-                        .get("pieces").asJsonArray
-                        .get(0).asJsonObject
+
+            // check if property type is observable
+            /*if (node.get("expr")?.asJsonObject?.get("rhs")
+                            ?.asJsonObject?.get("expr")?.asJsonObject?.get("name")?.asString == "observable") {
+                val leftSide = node.get("expr").asJsonObject
+                        .get("lhs").asJsonObject
+                type = leftSide
+                        .get("expr").asJsonObject
                         .get("name").asString
-                // TODO - find a better way to pattern match collections
-                "listOf" -> {
-                    val listOfMemberType = node.get("expr").asJsonObject
-                            .get("typeArgs").asJsonArray
-                    if (listOfMemberType.size() > 0) {
-                        "$type( " + listOfMemberType
-                                .get(0).asJsonObject
-                                .get("ref").asJsonObject
-                                .get("pieces").asJsonArray
-                                .get(0).asJsonObject
-                                .get("name").asString + ")"
-                    } else {
-                        type
+                /*leftSide.get("args").asJsonArray.forEach {
+                    // TODO find some way to recurse down the observable list stuff
+                }*/
+
+            } else {*/
+                val type = node.get("expr").asJsonObject
+                        .get("expr").asJsonObject
+                        .get("name").asString
+                val isolatedType = when(type) {
+                    "inject" -> isolated.get("type").asJsonObject
+                            .get("ref").asJsonObject
+                            .get("pieces").asJsonArray
+                            .get(0).asJsonObject
+                            .get("name").asString
+                    // TODO - find a better way to pattern match collections
+                    "listOf" -> {
+                        val listOfMemberType = node.get("expr").asJsonObject
+                                .get("typeArgs").asJsonArray
+                        if (listOfMemberType.size() > 0) {
+                            "$type( " + listOfMemberType
+                                    .get(0).asJsonObject
+                                    .get("ref").asJsonObject
+                                    .get("pieces").asJsonArray
+                                    .get(0).asJsonObject
+                                    .get("name").asString + ")"
+                        } else {
+                            type
+                        }
                     }
-                }
-                "HashMap" -> "$type<" + node.get("expr").asJsonObject
-                        .get("typeArgs").asJsonArray
-                        .get(0).asJsonObject
-                        .get("ref").asJsonObject
-                        .get("pieces").asJsonArray
-                        .get(0).asJsonObject
-                        .get("name").asString + "," + node.get("expr").asJsonObject
-                        .get("typeArgs").asJsonArray
-                        .get(1).asJsonObject
-                        .get("ref").asJsonObject
-                        .get("pieces").asJsonArray
-                        .get(0).asJsonObject
-                        .get("name").asString + ">"
-                "ArrayList" -> "$type<" + node.get("expr").asJsonObject
-                        .get("typeArgs").asJsonArray
-                        .get(0).asJsonObject
-                        .get("ref").asJsonObject
-                        .get("pieces").asJsonArray
-                        .get(0).asJsonObject
-                        .get("name").asString + ">"
-                "mutableListOf" -> {
-                    val listOfMemberType = node.get("expr").asJsonObject
+                    "HashMap" -> "$type<" + node.get("expr").asJsonObject
                             .get("typeArgs").asJsonArray
-                    if (listOfMemberType.size() > 0) {
-                        "$type( " + listOfMemberType
-                                .get(0).asJsonObject
-                                .get("ref").asJsonObject
-                                .get("pieces").asJsonArray
-                                .get(0).asJsonObject
-                                .get("name").asString + ")"
-                    } else {
-                        type
+                            .get(0).asJsonObject
+                            .get("ref").asJsonObject
+                            .get("pieces").asJsonArray
+                            .get(0).asJsonObject
+                            .get("name").asString + "," + node.get("expr").asJsonObject
+                            .get("typeArgs").asJsonArray
+                            .get(1).asJsonObject
+                            .get("ref").asJsonObject
+                            .get("pieces").asJsonArray
+                            .get(0).asJsonObject
+                            .get("name").asString + ">"
+                    "ArrayList" -> "$type<" + node.get("expr").asJsonObject
+                            .get("typeArgs").asJsonArray
+                            .get(0).asJsonObject
+                            .get("ref").asJsonObject
+                            .get("pieces").asJsonArray
+                            .get(0).asJsonObject
+                            .get("name").asString + ">"
+                    "mutableListOf" -> {
+                        val listOfMemberType = node.get("expr").asJsonObject
+                                .get("typeArgs").asJsonArray
+                        if (listOfMemberType.size() > 0) {
+                            "$type( " + listOfMemberType
+                                    .get(0).asJsonObject
+                                    .get("ref").asJsonObject
+                                    .get("pieces").asJsonArray
+                                    .get(0).asJsonObject
+                                    .get("name").asString + ")"
+                        } else {
+                            type
+                        }
                     }
+                    else -> type
                 }
-                else -> type
-            }
+           // }
             propList.add(ClassProperties(isolatedName, isolatedType))
         }
     }
