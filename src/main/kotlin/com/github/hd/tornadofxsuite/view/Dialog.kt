@@ -39,11 +39,15 @@ class Dialog : Fragment() {
         button("yeaaa") {
             action {
                 testBuilder.generateTests(scanner.detectedViewControls)
+<<<<<<< HEAD
                 view.overlay.apply {
                     style {
                         opacity = 0.0
                     }
                 }
+=======
+                view.overlay.removeClass(translucent)
+>>>>>>> 28f2d6ba961dacc674a7a25c43d65f85f1e38102
                 close()
             }
             vboxConstraints {
