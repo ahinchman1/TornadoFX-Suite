@@ -1,6 +1,5 @@
 package com.github.hd.tornadofxsuite.view
 
-import com.example.demo.controller.ClassScanner
 import com.github.hd.tornadofxsuite.app.Styles
 import com.github.hd.tornadofxsuite.app.Styles.Companion.top
 import com.github.hd.tornadofxsuite.controller.FXTestBuilders

@@ -1,13 +1,9 @@
 package com.github.hd.tornadofxsuite.controller
 
-import com.example.demo.controller.ClassScanner
-import com.github.hd.tornadofxsuite.app.Styles.Companion.translucent
 import com.github.hd.tornadofxsuite.model.TornadoFXInputsScope
 import com.github.hd.tornadofxsuite.view.Dialog
 import com.github.hd.tornadofxsuite.view.FetchCompletedEvent
 import com.github.hd.tornadofxsuite.view.MainView
-import com.github.mattmoore.kast.parse
-import javafx.scene.layout.StackPane
 import javafx.util.Duration
 import tornadofx.*
 import java.io.BufferedReader
