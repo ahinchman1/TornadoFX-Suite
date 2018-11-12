@@ -8,7 +8,7 @@ import kastree.ast.Node
 import kastree.ast.psi.Parser
 import tornadofx.*
 
-class Parser : Controller() {
+class KParser : Controller() {
 
     var classes = ArrayList<ClassBreakDown>()
     var independentFunctions = ArrayList<String>()

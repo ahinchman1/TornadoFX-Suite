@@ -1,6 +1,6 @@
 package com.github.hd.tornadofxsuite.controller
 
-import com.github.hd.tornadofxsuite.model.TornadoFXInputsScope
+import com.github.ast.parser.KParser
 import com.github.hd.tornadofxsuite.view.Dialog
 import com.github.hd.tornadofxsuite.view.FetchCompletedEvent
 import com.github.hd.tornadofxsuite.view.MainView
@@ -15,7 +15,7 @@ import java.nio.file.Paths
 class FXTestGenerator: Controller() {
     val kotlinFiles = ArrayList<File>()
     private val view: MainView by inject()
-    private val scanner: ClassScanner by inject()
+    private val scanner: KParser by inject()
 
     // TODO separate UI from AST parsing
     fun fetchAsync(file: File) {
@@ -45,7 +45,7 @@ class FXTestGenerator: Controller() {
 
     private fun consoleLog() {
         // print and format classes
-        scanner.bareClasses.forEach {
+        scanner.classes.forEach {
             println("CLASS NAME: " + it.className)
             println("CLASS PROPERTIES: ")
             it.classProperties.forEach { property ->
@@ -57,16 +57,16 @@ class FXTestGenerator: Controller() {
             }
         }
 
-        if (scanner.detectedViewControls.size > 0) {
+        if (scanner.detectedUIControls.size > 0) {
             println("DETECTED LAMBDA ELEMENTS IN PROJECT: ")
-            scanner.detectedViewControls.forEach {
+            scanner.detectedUIControls.forEach {
                 println(it)
             }
         }
 
-        if (scanner.detectedViewControls.size > 0) {
+        if (scanner.detectedUIControls.size > 0) {
             println("DERIVING INPUTS: ")
-            scanner.detectedViewControls.forEach {
+            scanner.detectedUIControls.forEach {
                 println(it)
             }
         }
