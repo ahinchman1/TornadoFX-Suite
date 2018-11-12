@@ -152,28 +152,28 @@ class KParser : Controller() {
         }
     }
 
-    fun JsonObject.lambda(): JsonObject = this.get("lambda").asJsonObject
+    private fun JsonObject.lambda(): JsonObject = this.get("lambda").asJsonObject
 
-    fun JsonObject.expr(): JsonObject = this.get("expr").asJsonObject
+    private fun JsonObject.expr(): JsonObject = this.get("expr").asJsonObject
 
-    fun JsonObject.ref(): JsonObject = this.get("ref").asJsonObject
+    private fun JsonObject.ref(): JsonObject = this.get("ref").asJsonObject
 
-    fun JsonObject.type(): JsonObject = this.get("type").asJsonObject
+    private fun JsonObject.type(): JsonObject = this.get("type").asJsonObject
 
-    fun JsonObject.func(): JsonObject = this.get("func").asJsonObject
+    private fun JsonObject.func(): JsonObject = this.get("func").asJsonObject
 
-    fun JsonObject.block(): JsonObject = this.get("block").asJsonObject
+    private fun JsonObject.block(): JsonObject = this.get("block").asJsonObject
 
-    fun JsonObject.stmts(): JsonArray = this.get("stmts").asJsonArray
+    private fun JsonObject.stmts(): JsonArray = this.get("stmts").asJsonArray
 
-    fun JsonArray.getObject(num: Int) = this.get(num).asJsonObject
+    private fun JsonArray.getObject(num: Int) = this.get(num).asJsonObject
 
-    fun JsonObject.vars(): JsonArray = this.get("vars").asJsonArray
+    private fun JsonObject.vars(): JsonArray = this.get("vars").asJsonArray
 
-    fun JsonObject.typeArgs(): JsonArray = this.get("typeArgs").asJsonArray
+    private fun JsonObject.typeArgs(): JsonArray = this.get("typeArgs").asJsonArray
 
-    fun JsonObject.pieces(): JsonArray = this.get("pieces").asJsonArray
+    private fun JsonObject.pieces(): JsonArray = this.get("pieces").asJsonArray
 
-    fun JsonObject.name(): String = this.get("name").asString
+    private fun JsonObject.name(): String = this.get("name").asString
 
 }
