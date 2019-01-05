@@ -47,7 +47,9 @@ class KParser : Controller() {
      *     1) kastree.ast.Node.Expr.Call -> is a member property of a certain class
      *     2) kastree.ast.Node.Expr.Name -> an independent member property
      */
-    private fun convertToMemberJsonProperty(property: Node.Decl.Property, propList: ArrayList<ClassProperties>, className: String) {
+    private fun convertToMemberJsonProperty(property: Node.Decl.Property,
+                                            propList: ArrayList<ClassProperties>,
+                                            className: String) {
         val secondBit = "expr=Call(expr=Name(name="
         val string = property.toString()
 
@@ -63,57 +65,85 @@ class KParser : Controller() {
                 detectLambdaControls(nodesElement.asJsonObject, className)
             }
 
-
-            // check if property type is observable
-            /*if (node.get("expr")?.asJsonObject?.get("rhs")
-                            ?.asJsonObject?.get("expr")?.asJsonObject?.get("name")?.asString == "observable") {
-                val leftSide = node.get("expr").asJsonObject
-                        .get("lhs").asJsonObject
-                type = leftSide
-                        .get("expr").asJsonObject
-                        .get("name").asString
-                /*leftSide.get("args").asJsonArray.forEach {
-                    // TODO find some way to recurse down the observable list stuff
-                }*/
-
-            } else {*/
-
-            val type = node.expr().expr().name()
-
-            val isolatedType = when(type) {
-                "inject" -> isolated.type().ref()
-                        .pieces().getObject(0).name()
-                "listOf" -> {
-                    val listOfMemberType = node.expr().typeArgs()
-
-                    if (listOfMemberType.size() > 0) {
-                        "$type( " + listOfMemberType.getObject(0).ref().pieces().getObject(0).name() + ")"
-                    } else {
-                        type
-                    }
-                }
-                "HashMap" -> "$type<" +
-                        node.expr().typeArgs().getObject(0).ref()
-                                .pieces().getObject(0).name() + ","+
-                        node.expr().typeArgs().getObject(1).ref()
-                                .pieces().getObject(0).name() + ">"
-                "ArrayList" -> "$type<" +
-                        node.expr().typeArgs().getObject(0).ref()
-                                .pieces().getObject(0).name() + ">"
-                "mutableListOf" -> {
-                    val listOfMemberType = node.expr().typeArgs()
-
-                    if (listOfMemberType.size() > 0) {
-                        "$type( " + listOfMemberType.getObject(0).ref().pieces().getObject(0).name() + ")"
-                    } else {
-                        type
-                    }
-                }
-                else -> type
+            val classProperty = when {
+                node.expr().has("lhs") -> getObservableProperty(node, isolatedName)
+                else -> getClassProperty(node, isolated, isolatedName)
             }
-            // }
-            propList.add(ClassProperties(isolatedName, isolatedType))
+
+            propList.add(classProperty)
         }
+    }
+
+    private fun getObservableProperty(node: JsonObject, isolatedName: String): ClassProperties {
+        val type = node.expr().lhs().expr().name()
+
+        // get list
+        val elements = node.expr().lhs().args()
+        var list = ""
+
+        // build objects for primitive lists
+        val isolatedType = when (type) {
+            "listOf" -> {
+                elements.forEach { element ->
+                    val elemType = element.asJsonObject.expr().expr().name()
+                    list += "$elemType("
+                    val objectItems = element.asJsonObject.expr().args()
+                    objectItems.forEachIndexed { index, property ->
+                        val elem = property.asJsonObject.expr().elems().getObject(0)
+                        when {
+                            elem.has("str") -> list += "${elem.get("str")}"
+                            else -> println("Looks like this element type is: $elem")
+                        }
+                        list += if (index != objectItems.size()) ", " else ")"
+                    }
+                }
+                list
+            }
+            else -> {
+                println("OBSERVABLE TYPE $type")
+                type
+            }
+        }
+        return ClassProperties(isolatedName, isolatedType)
+    }
+
+    private fun getClassProperty(node: JsonObject, isolated: JsonObject, isolatedName: String): ClassProperties {
+
+        val type = node.expr().expr().name()
+
+        val isolatedType = when(type) {
+            "inject" -> isolated.type().ref()
+                    .pieces().getObject(0).name()
+            "listOf" -> {
+                val listOfMemberType = node.expr().typeArgs()
+
+                if (listOfMemberType.size() > 0) {
+                    "$type( " + listOfMemberType.getObject(0).ref().pieces().getObject(0).name() + ")"
+                } else {
+                    type
+                }
+            }
+            "HashMap" -> "$type<" +
+                    node.expr().typeArgs().getObject(0).ref()
+                            .pieces().getObject(0).name() + ","+
+                    node.expr().typeArgs().getObject(1).ref()
+                            .pieces().getObject(0).name() + ">"
+            "ArrayList" -> "$type<" +
+                    node.expr().typeArgs().getObject(0).ref()
+                            .pieces().getObject(0).name() + ">"
+            "mutableListOf" -> {
+                val listOfMemberType = node.expr().typeArgs()
+
+                if (listOfMemberType.size() > 0) {
+                    "$type( " + listOfMemberType.getObject(0).ref().pieces().getObject(0).name() + ")"
+                } else {
+                    type
+                }
+            }
+            else -> type
+        }
+
+        return ClassProperties(isolatedName, isolatedType)
     }
 
     // For TornadoFX DSLs
@@ -170,10 +200,18 @@ class KParser : Controller() {
 
     private fun JsonObject.vars(): JsonArray = this.get("vars").asJsonArray
 
+    private fun JsonObject.args(): JsonArray = this.get("args").asJsonArray
+
     private fun JsonObject.typeArgs(): JsonArray = this.get("typeArgs").asJsonArray
 
     private fun JsonObject.pieces(): JsonArray = this.get("pieces").asJsonArray
 
     private fun JsonObject.name(): String = this.get("name").asString
+
+    private fun JsonObject.lhs(): JsonObject = this.get("lhs").asJsonObject
+
+    private fun JsonObject.rhs(): JsonObject = this.get("rhs").asJsonObject
+
+    private fun JsonObject.elems(): JsonArray = this.get("elems").asJsonArray
 
 }
