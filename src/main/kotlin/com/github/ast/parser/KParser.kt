@@ -16,7 +16,7 @@ class KParser : Controller() {
     var detectedUIControls = HashMap<String, ArrayList<String>>()
 
     fun parseAST(textFile: String) {
-        val file = Parser.parseFile(textFile)
+        val file = Parser.parseFile(textFile, true)
 
         file.decls.forEach {node ->
             when (node) {
