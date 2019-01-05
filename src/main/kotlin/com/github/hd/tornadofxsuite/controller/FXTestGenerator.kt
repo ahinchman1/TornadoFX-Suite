@@ -80,18 +80,13 @@ class FXTestGenerator: Controller() {
             kotlinFiles.add(file)
             view.console.items.add(fileText)
             view.console.items.add("===================================================================")
-            //scanner.parseAST(fileText)
-            com.github.mattmoore.kast.parse(fileText)
+            scanner.parseAST(fileText)
         }
     }
 
     // TODO: Either use regex or better parsing
     // filter files for only Views and Controllers
     private fun filterFiles(fileText: String): Boolean {
-        var arr = arrayOf(1,2,3)
-        var array = arrayOf("string", "whatevers")
-        var com = arrayOf("sa", 1)
-
         return !fileText.contains("ApplicationTest()")
                 && !fileText.contains("src/test")
                 && !fileText.contains("@Test")

@@ -21,7 +21,7 @@ class KParser : Controller() {
         file.decls.forEach {node ->
             when (node) {
                 is Node.Decl.Structured -> breakDownClass(node.name, file)
-                is Node.Decl.Func -> independentFunctions.add(node.name)
+                is Node.Decl.Func -> node.name ?: independentFunctions.add(node.name.toString())
             }
         }
     }
@@ -35,7 +35,7 @@ class KParser : Controller() {
             when (it) {
                 is Node.Decl.Structured -> println("this is probably a companion object")
                 is Node.Decl.Property -> convertToMemberJsonProperty(it, classProperties, className)
-                is Node.Decl.Func -> classMembers.add(it.name)
+                is Node.Decl.Func -> it.name ?: classMembers.add(it.name.toString())
             }
         }
         classes.add(ClassBreakDown(className, classProperties, classMembers))

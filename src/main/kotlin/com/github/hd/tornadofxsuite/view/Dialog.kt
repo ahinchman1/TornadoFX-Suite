@@ -1,5 +1,6 @@
 package com.github.hd.tornadofxsuite.view
 
+import com.github.ast.parser.KParser
 import com.github.hd.tornadofxsuite.app.Styles
 import com.github.hd.tornadofxsuite.app.Styles.Companion.top
 import com.github.hd.tornadofxsuite.controller.FXTestBuilders
@@ -9,7 +10,7 @@ class Dialog : Fragment() {
 
     private val view: MainView by inject()
     private val testBuilder: FXTestBuilders by inject()
-    private val scanner: ClassScanner by inject()
+    private val scanner: KParser by inject()
 
     override val root = vbox {
         prefWidth = 600.0
@@ -26,7 +27,7 @@ class Dialog : Fragment() {
             }
 
             listview<String> {
-                scanner.detectedViewControls.forEach { view ->
+                scanner.detectedUIControls.forEach { view ->
                     items.add(view.key)
                     view.value.forEach { input ->
                         items.add("\t" + input)
@@ -37,16 +38,12 @@ class Dialog : Fragment() {
 
         button("yeaaa") {
             action {
-                testBuilder.generateTests(scanner.detectedViewControls)
-<<<<<<< HEAD
+                testBuilder.generateTests(scanner.detectedUIControls)
                 view.overlay.apply {
                     style {
                         opacity = 0.0
                     }
                 }
-=======
-                view.overlay.removeClass(translucent)
->>>>>>> 28f2d6ba961dacc674a7a25c43d65f85f1e38102
                 close()
             }
             vboxConstraints {
