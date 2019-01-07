@@ -7,12 +7,15 @@ data class ClassBreakDown(val className: String,
                           val classProperties: ArrayList<Property>,
                           val classMethods: ArrayList<Method>)
 
-data class Property(val propertyName: String,
+data class Property(val valOrVar: String,
+                    val propertyName: String,
                     val propertyType: String)
 
-data class Method(val methodName: String,
+data class Method(val name: String,
                   val parameters: ArrayList<Property>,
-                  val returnType: String = "Unit")
+                  val returnType: String = "Unit",
+                  val methodStatements: ArrayList<String>,
+                  val viewNodesAffected: ArrayList<String>)
 
 // I'm actually not sure if it's beneficial to keep an index of the path for a directed graph
 // but I'mma put it in here anyway

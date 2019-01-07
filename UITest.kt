@@ -12,17 +12,12 @@ class UITest {
 	}
 
 	@Test
-	fun testitem() { 
+	fun testtextfield() { 
 		
 }
 
 	@Test
-	fun testform() { 
-		
-}
-
-	@Test
-	fun testbutton() { 
+	fun testtextfield() { 
 		
 }
 
