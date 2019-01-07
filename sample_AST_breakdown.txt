@@ -1,0 +1,88 @@
+this is probably a companion object
+CLASS NAME: MyApp
+CLASS PROPERTIES:
+CLASS METHODS:
+CLASS NAME: BottomViewController
+CLASS PROPERTIES:
+	view: BottomView
+	mondays: CatSchedule("Tom Mariano", "Meowsers", "1015 High Street", "3:00PM", "/kitty/kitty1.png").observableCatSchedule("John Hill", "Tom", "1010 8 Street", "4:00PM", "/kitty/kitty2.png").observableCatSchedule("Louise Vargas", "Mr. Whiskers", "1120 6th Street", "4:30PM", "/kitty/kitty3.png").observableCatSchedule("Dale Benton", "Pepper", "2111 8th Street", "7:00PM", "/kitty/kitty4.png").observableCatSchedule("Tucker Harrison", "Princess", "2267 8th Street", "8:00PM", "/kitty/kitty5.png").observable
+	tuesdays: CatSchedule("Tom Mariano", "Meowsers", "1110 6th Street", "3:00PM", "/kitty/kitty1.png").observableCatSchedule("John Hill", "Tom", "1115 6th Street", "4:00PM", "/kitty/kitty2.png").observableCatSchedule("Louise Vargas", "Mr. Whiskers", "1120 6th Street", "4:30PM", "/kitty/kitty3.png").observableCatSchedule("Dale Benton", "Pepper", "2111 8th Street", "7:00PM", "/kitty/kitty4.png").observableCatSchedule("Tucker Harrison", "Princess", "2267 8th Street", "8:00PM", "/kitty/kitty5.png").observable
+	wednesdays: CatSchedule("Tom Mariano", "Meowsers", "1110 6th Street", "3:00PM", "/kitty/kitty1.png").observableCatSchedule("John Hill", "Tom", "1115 6th Street", "4:00PM", "/kitty/kitty2.png").observableCatSchedule("Louise Vargas", "Mr. Whiskers", "1120 6th Street", "4:30PM", "/kitty/kitty3.png").observableCatSchedule("Dale Benton", "Pepper", "2111 8th Street", "7:00PM", "/kitty/kitty4.png").observableCatSchedule("Tucker Harrison", "Princess", "2267 8th Street", "8:00PM", "/kitty/kitty5.png").observable
+	thursdays: CatSchedule("Tom Mariano", "Meowsers", "1110 6th Street", "3:00PM", "/kitty/kitty1.png").observableCatSchedule("John Hill", "Tom", "1115 6th Street", "4:00PM", "/kitty/kitty2.png").observableCatSchedule("Louise Vargas", "Mr. Whiskers", "1120 6th Street", "4:30PM", "/kitty/kitty3.png").observableCatSchedule("Dale Benton", "Pepper", "2111 8th Street", "7:00PM", "/kitty/kitty4.png").observableCatSchedule("Tucker Harrison", "Princess", "2267 8th Street", "8:00PM", "/kitty/kitty5.png").observable
+	fridays: CatSchedule("Tom Mariano", "Meowsers", "1110 6th Street", "3:00PM", "/kitty/kitty1.png").observableCatSchedule("John Hill", "Tom", "1115 6th Street", "4:00PM", "/kitty/kitty2.png").observableCatSchedule("Louise Vargas", "Mr. Whiskers", "1120 6th Street", "4:30PM", "/kitty/kitty3.png").observableCatSchedule("Dale Benton", "Pepper", "2111 8th Street", "7:00PM", "/kitty/kitty4.png").observableCatSchedule("Tucker Harrison", "Princess", "2267 8th Street", "8:00PM", "/kitty/kitty5.png").observable
+CLASS METHODS:
+	Method(name=changeCatAvi, parameters=[Property(valOrVar=val, propertyName=catSchedule, propertyType=CatSchedule)], returnType=Unit, methodStatements=[, val  rectangle: {"name":"rectangle"} = = , val  image: {"name":"image"} = = , ], viewNodesAffected=[])
+	Method(name=editCatSchedule, parameters=[Property(valOrVar=val, propertyName=catSchedule, propertyType=CatSchedule)], returnType=Unit, methodStatements=[val  catScheduleScope: {"name":"catScheduleScope"} = = , , ], viewNodesAffected=[])
+CLASS NAME: CatScheduleEvent
+CLASS PROPERTIES:
+	view: BottomView
+	mondays: CatSchedule("Tom Mariano", "Meowsers", "1015 High Street", "3:00PM", "/kitty/kitty1.png").observableCatSchedule("John Hill", "Tom", "1010 8 Street", "4:00PM", "/kitty/kitty2.png").observableCatSchedule("Louise Vargas", "Mr. Whiskers", "1120 6th Street", "4:30PM", "/kitty/kitty3.png").observableCatSchedule("Dale Benton", "Pepper", "2111 8th Street", "7:00PM", "/kitty/kitty4.png").observableCatSchedule("Tucker Harrison", "Princess", "2267 8th Street", "8:00PM", "/kitty/kitty5.png").observable
+	tuesdays: CatSchedule("Tom Mariano", "Meowsers", "1110 6th Street", "3:00PM", "/kitty/kitty1.png").observableCatSchedule("John Hill", "Tom", "1115 6th Street", "4:00PM", "/kitty/kitty2.png").observableCatSchedule("Louise Vargas", "Mr. Whiskers", "1120 6th Street", "4:30PM", "/kitty/kitty3.png").observableCatSchedule("Dale Benton", "Pepper", "2111 8th Street", "7:00PM", "/kitty/kitty4.png").observableCatSchedule("Tucker Harrison", "Princess", "2267 8th Street", "8:00PM", "/kitty/kitty5.png").observable
+	wednesdays: CatSchedule("Tom Mariano", "Meowsers", "1110 6th Street", "3:00PM", "/kitty/kitty1.png").observableCatSchedule("John Hill", "Tom", "1115 6th Street", "4:00PM", "/kitty/kitty2.png").observableCatSchedule("Louise Vargas", "Mr. Whiskers", "1120 6th Street", "4:30PM", "/kitty/kitty3.png").observableCatSchedule("Dale Benton", "Pepper", "2111 8th Street", "7:00PM", "/kitty/kitty4.png").observableCatSchedule("Tucker Harrison", "Princess", "2267 8th Street", "8:00PM", "/kitty/kitty5.png").observable
+	thursdays: CatSchedule("Tom Mariano", "Meowsers", "1110 6th Street", "3:00PM", "/kitty/kitty1.png").observableCatSchedule("John Hill", "Tom", "1115 6th Street", "4:00PM", "/kitty/kitty2.png").observableCatSchedule("Louise Vargas", "Mr. Whiskers", "1120 6th Street", "4:30PM", "/kitty/kitty3.png").observableCatSchedule("Dale Benton", "Pepper", "2111 8th Street", "7:00PM", "/kitty/kitty4.png").observableCatSchedule("Tucker Harrison", "Princess", "2267 8th Street", "8:00PM", "/kitty/kitty5.png").observable
+	fridays: CatSchedule("Tom Mariano", "Meowsers", "1110 6th Street", "3:00PM", "/kitty/kitty1.png").observableCatSchedule("John Hill", "Tom", "1115 6th Street", "4:00PM", "/kitty/kitty2.png").observableCatSchedule("Louise Vargas", "Mr. Whiskers", "1120 6th Street", "4:30PM", "/kitty/kitty3.png").observableCatSchedule("Dale Benton", "Pepper", "2111 8th Street", "7:00PM", "/kitty/kitty4.png").observableCatSchedule("Tucker Harrison", "Princess", "2267 8th Street", "8:00PM", "/kitty/kitty5.png").observable
+CLASS METHODS:
+	Method(name=changeCatAvi, parameters=[Property(valOrVar=val, propertyName=catSchedule, propertyType=CatSchedule)], returnType=Unit, methodStatements=[, val  rectangle: {"name":"rectangle"} = = , val  image: {"name":"image"} = = , ], viewNodesAffected=[])
+	Method(name=editCatSchedule, parameters=[Property(valOrVar=val, propertyName=catSchedule, propertyType=CatSchedule)], returnType=Unit, methodStatements=[val  catScheduleScope: {"name":"catScheduleScope"} = = , , ], viewNodesAffected=[])
+CLASS NAME: NeighborhoodController
+CLASS PROPERTIES:
+	view: NeighborhoodView
+CLASS METHODS:
+	Method(name=housePane, parameters=[Property(valOrVar=val, propertyName=position, propertyType=Pos)], returnType=StackPane, methodStatements=[val  houseNum: {"name":"houseNum"} = = , ], viewNodesAffected=[])
+	Method(name=grassPane, parameters=[], returnType=StackPane, methodStatements=[], viewNodesAffected=[])
+	Method(name=verticalStreetPane, parameters=[], returnType=StackPane, methodStatements=[], viewNodesAffected=[])
+	Method(name=horizontalStreetPane, parameters=[], returnType=StackPane, methodStatements=[], viewNodesAffected=[])
+	Method(name=crossStreetPane, parameters=[], returnType=StackPane, methodStatements=[], viewNodesAffected=[])
+	Method(name=random, parameters=[], returnType=Unit, methodStatements=[ADD], viewNodesAffected=[])
+CLASS NAME: CatSchedule
+CLASS PROPERTIES:
+	ownerNameProperty: SimpleStringProperty
+	catNameProperty: SimpleStringProperty
+	addressProperty: SimpleStringProperty
+	timeProperty: SimpleStringProperty
+	catImageProperty: SimpleStringProperty
+CLASS METHODS:
+CLASS NAME: CatScheduleModel
+CLASS PROPERTIES:
+	ownerNameProperty: SimpleStringProperty
+	catNameProperty: SimpleStringProperty
+	addressProperty: SimpleStringProperty
+	timeProperty: SimpleStringProperty
+	catImageProperty: SimpleStringProperty
+CLASS METHODS:
+CLASS NAME: CatScheduleScope
+CLASS PROPERTIES:
+	ownerNameProperty: SimpleStringProperty
+	catNameProperty: SimpleStringProperty
+	addressProperty: SimpleStringProperty
+	timeProperty: SimpleStringProperty
+	catImageProperty: SimpleStringProperty
+CLASS METHODS:
+CLASS NAME: NeighborhoodView
+CLASS PROPERTIES:
+	controller: NeighborhoodController
+	root: stackpane
+CLASS METHODS:
+CLASS NAME: Editor
+CLASS PROPERTIES:
+	ownerNameField: singleAssign
+	catNameField: singleAssign
+	timeField: singleAssign
+	root: hbox
+CLASS METHODS:
+	Method(name=save, parameters=[], returnType=Unit, methodStatements=[, val  catSchedule: {"name":"catSchedule"} = = , , ], viewNodesAffected=[])
+CLASS NAME: BottomView
+CLASS PROPERTIES:
+	controller: BottomViewController
+	model: CatScheduleModel
+	weekdays: listOf
+	root: hbox
+CLASS METHODS:
+CLASS NAME: MainView
+CLASS PROPERTIES:
+	root: borderpane
+CLASS METHODS:
+DETECTED LAMBDA ELEMENTS IN PROJECT:
+Editor=[textfield, textfield, textfield, button, action]
+DERIVING INPUTS:
+Editor=[textfield, textfield, textfield, button, action]

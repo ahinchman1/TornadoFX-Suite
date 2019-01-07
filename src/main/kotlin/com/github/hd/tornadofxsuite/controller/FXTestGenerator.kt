@@ -90,7 +90,7 @@ class FXTestGenerator: Controller() {
         return !fileText.contains("ApplicationTest()")
                 && !fileText.contains("src/test")
                 && !fileText.contains("@Test")
-                && !fileText.contains("Class Styles")
+                && !fileText.contains("class Styles")
     }
 
     fun askUserDialog() {

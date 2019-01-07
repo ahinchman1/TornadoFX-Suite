@@ -42,28 +42,35 @@ class KParser : Controller() {
     private fun breakdownClassMethod(method: Node.Decl.Func, classMethods: ArrayList<Method>) {
         val methodJson = gson.toJsonTree(method).asJsonObject
         val methodStatements = ArrayList<String>()
-        val methodStmts = methodJson.body().block().stmts()
-        if (methodStmts.size() > 0) {
-            methodStmts.forEach { statement ->
-                val stmt = statement.asJsonObject
-                when {
-                    stmt.has("expr") ->
-                        methodStatements.add(breakdownExpr(stmt.expr(), ""))
-                    stmt.has("decl") ->
-                        methodStatements.add(breakdownDecl(stmt.decl(), ""))
-                    else -> println("stmt has$stmt")
+        if (methodJson.body().has("block")) {
+            val methodStmts = methodJson.body().block().stmts()
+            if (methodStmts.size() > 0) {
+                methodStmts.forEach { statement ->
+                    val stmt = statement.asJsonObject
+                    when {
+                        stmt.has("expr") ->
+                            methodStatements.add(breakdownExpr(stmt.expr(), ""))
+                        stmt.has("decl") ->
+                            methodStatements.add(breakdownDecl(stmt.decl(), ""))
+                        else -> println("stmt has$stmt")
+                    }
                 }
             }
+        } else {
+            methodStatements.add(breakdownBinaryOperation((methodJson.body().expr()), ""))
         }
 
         val parameters = ArrayList<Property>()
         methodJson.params().forEach { parameter ->
             val param = parameter.asJsonObject
-            val paramType = param.type().ref().pieces().getObject(0).name()
+            val paramType = param.type().ref().getType()
             parameters.add(Property("val", param.name(), paramType))
         }
 
-        val returnType = methodJson.type().ref().pieces().getObject(0).name()
+        var returnType = "Unit"
+        if (methodJson.has("type")) {
+            returnType = methodJson.type().ref().getType()
+        }
 
         // TODO write a mechanism to detect nodes per function after AST parse job is complete
         classMethods.add(Method(
@@ -71,13 +78,26 @@ class KParser : Controller() {
                 parameters = parameters,
                 returnType = returnType,
                 methodStatements = methodStatements,
-                viewNodesAffected = ArrayList<String>()))
+                viewNodesAffected = ArrayList()))
     }
 
     private fun breakdownDecl(decl: JsonObject, buildStmt: String): String {
         val isolated = decl.vars().getObject(0)
         val isolatedName = isolated.name()
-        val property = getProperty(decl, isolated, isolatedName)
+        val property = when {
+            decl.expr().has("expr") -> getProperty(
+                    decl,
+                    isolated,
+                    isolatedName)
+            decl.expr().has("lhs") &&
+                decl.expr().has("oper") &&
+                decl.expr().has("rhs") -> Property(
+                    valOrVar(decl),
+                    isolatedName,
+                    breakdownBinaryOperation(decl.expr(), "")
+            )
+            else -> TODO()
+        }
         val declaration = "$buildStmt${property.valOrVar} $isolatedName: $isolated ="
         return "$declaration = ${breakdownExpr(decl, buildStmt)}"
     }
@@ -99,25 +119,38 @@ class KParser : Controller() {
      */
     private fun getArguments(arguments: JsonArray, buildStmt: String): String {
         var buildArgs = "$buildStmt("
-        arguments.forEachIndexed { index, argument ->
-            val elem = argument.asJsonObject.expr().elems().getObject(0)
-            when {
-                elem.has("str") -> buildArgs += "${elem.get("str")}"
-                elem.has("expr") -> buildArgs += breakdownExpr(elem, buildArgs)
-                else -> println("Looks like this element type is: $elem")
+        if (arguments.size() > 0) {
+            arguments.forEachIndexed { index, argument ->
+                val argExpression = argument.asJsonObject.expr()
+                var elem = argExpression
+                if (argExpression.has("elems")) elem = argExpression.elems().getObject(0)
+
+                buildArgs += when {
+                    elem.has("str") -> elem.str()
+                    elem.has("expr") -> breakdownExpr(elem, buildArgs)
+                    elem.has("value") -> "${elem.value()}"
+                    elem.has("lhs") &&
+                            elem.has("oper") &&
+                            elem.has("rhs") -> breakdownBinaryOperation(elem, buildArgs)
+                    elem.has("name") -> elem.name()
+                    elem.has("recv") -> elem.recv().type().getType()
+                    else -> println("Looks like this element type is: $elem")
+                }
+                buildArgs += if (index < arguments.size()) ", " else ")"
             }
-            buildArgs += if (index < arguments.size()) ", " else ")"
-        }
+        } else buildArgs += ")"
         return buildArgs
     }
 
     // TODO - look into other types of binary operations
     private fun breakdownBinaryOperation(expr: JsonObject, buildStmt: String): String {
-        return if (expr.oper().token() == "DOT") {
-            "$buildStmt${breakdownExpr(expr.lhs(), buildStmt)}.${breakdownExpr(expr.rhs(), buildStmt)}"
-        } else {
-            "Binary Operation has: ${expr.oper().token()}"
+        val operator = when (expr.oper().token()) {
+            "DOT" -> "."
+            "ASSN" -> " = "
+            else -> expr.oper().token()
         }
+
+        return "$buildStmt${breakdownExpr(expr.lhs(), buildStmt)}$operator${breakdownExpr(expr.rhs(), buildStmt)}"
     }
 
     /***
@@ -209,34 +242,32 @@ class KParser : Controller() {
                 val listOfMemberType = node.expr().typeArgs()
 
                 if (listOfMemberType.size() > 0) {
-                    "$type( " + listOfMemberType.getObject(0).ref().pieces().getObject(0).name() + ")"
+                    "$type( " + listOfMemberType.getObject(0).ref().getType() + ")"
                 } else {
                     type
                 }
             }
             "HashMap" -> "$type<" +
-                    node.expr().typeArgs().getObject(0).ref()
-                            .pieces().getObject(0).name() + ","+
-                    node.expr().typeArgs().getObject(1).ref()
-                            .pieces().getObject(0).name() + ">"
+                    node.expr().typeArgs().getObject(0).ref().getType() + ","+
+                    node.expr().typeArgs().getObject(1).ref().getType() + ">"
             "ArrayList" -> "$type<" +
-                    node.expr().typeArgs().getObject(0).ref()
-                            .pieces().getObject(0).name() + ">"
+                    node.expr().typeArgs().getObject(0).ref().getType() + ">"
             "mutableListOf" -> {
                 val listOfMemberType = node.expr().typeArgs()
 
                 if (listOfMemberType.size() > 0) {
-                    "$type( " + listOfMemberType.getObject(0).ref().pieces().getObject(0).name() + ")"
+                    "$type( " + listOfMemberType.getObject(0).ref().getType() + ")"
                 } else {
                     type
                 }
             }
             else -> type
         }
-        val valOrVar = if (node.readOnly()) "val " else "var "
 
-        return Property(valOrVar, isolatedName, isolatedType)
+        return Property(valOrVar(node), isolatedName, isolatedType)
     }
+
+    private fun valOrVar(node: JsonObject): String = if (node.readOnly()) "val " else "var "
 
     // For TornadoFX DSLs
     private fun detectLambdaControls(node: JsonObject, className: String) {
@@ -274,6 +305,8 @@ class KParser : Controller() {
         }
     }
 
+    private fun JsonObject.getType() = this.pieces().getObject(0).name()
+
     private fun JsonObject.lambda(): JsonObject = this.get("lambda").asJsonObject
 
     private fun JsonObject.expr(): JsonObject = this.get("expr").asJsonObject
@@ -298,8 +331,6 @@ class KParser : Controller() {
 
     private fun JsonObject.pieces(): JsonArray = this.get("pieces").asJsonArray
 
-    private fun JsonObject.name(): String = this.get("name").asString
-
     private fun JsonObject.lhs(): JsonObject = this.get("lhs").asJsonObject
 
     private fun JsonObject.rhs(): JsonObject = this.get("rhs").asJsonObject
@@ -310,13 +341,23 @@ class KParser : Controller() {
 
     private fun JsonObject.decl(): JsonObject = this.get("decl").asJsonObject
 
+    private fun JsonObject.oper(): JsonObject = this.get("oper").asJsonObject
+
+    private fun JsonObject.params(): JsonArray = this.get("params").asJsonArray
+
+    private fun JsonObject.recv(): JsonObject = this.get("recv").asJsonObject
+
+    // primitives
+
+    private fun JsonObject.token(): String = this.get("token").asString
+
     private fun JsonObject.readOnly(): Boolean = this.get("readOnly").asBoolean
 
     private fun JsonObject.delegated(): Boolean = this.get("delegated").asBoolean
 
-    private fun JsonObject.oper(): JsonObject = this.get("oper").asJsonObject
+    private fun JsonObject.value(): Float = this.get("value").asFloat
 
-    private fun JsonObject.token(): String = this.get("token").asString
+    private fun JsonObject.str(): String = this.get("str").asString
 
-    private fun JsonObject.params(): JsonArray = this.get("params").asJsonArray
+    private fun JsonObject.name(): String = this.get("name").asString
 }
