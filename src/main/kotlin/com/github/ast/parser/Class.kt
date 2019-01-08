@@ -1,6 +1,5 @@
 package com.github.ast.parser
 
-import javafx.scene.Node
 import java.util.*
 
 data class ClassBreakDown(val className: String,
@@ -17,10 +16,7 @@ data class Method(val name: String,
                   val methodStatements: ArrayList<String>,
                   val viewNodesAffected: ArrayList<String>)
 
-// I'm actually not sure if it's beneficial to keep an index of the path for a directed graph
-// but I'mma put it in here anyway
-data class UINode(val uiNode: Node,
-                val nodeLevel: Int,
+data class UINode(val uiNode: String,
                 val path: ArrayList<String>,
                 val associatedFunctions: ArrayList<String>)
 
@@ -28,6 +24,7 @@ data class UINode(val uiNode: Node,
 // TODO - Rethink behavior for this since there's an architecture that matters
 /**
  * Store view hierarchy tree here
+ * TODO - Can Tensorflow do directional graphing?
  */
 class Digraph(val edges: HashMap<UINode, HashSet<UINode>>) {
 
@@ -56,10 +53,32 @@ class Digraph(val edges: HashMap<UINode, HashSet<UINode>>) {
         }
     }
 
+    fun isAdjacent(source: UINode, destination: UINode): Boolean =
+            edges[source]?.contains(destination) ?: false
+
+    fun hasNode(node: UINode): Boolean = edges.containsKey(node)
+
     fun getChildren(node: UINode): HashSet<UINode> = edges[node] ?: HashSet()
 
     // use bfs for nodes since trees are probably wider than they are deep
+    fun breadthFirstSearch(source: UINode, destination: UINode): Boolean {
+        if (!edges.containsKey(source) || !edges.contains(destination)) {
+            return false
+        }
+        val queue = LinkedList<UINode>()
+        queue.addLast(source)
+        return breadthFirstSearch(queue, destination)
+    }
 
+    private fun breadthFirstSearch(queue: LinkedList<UINode>, destination: UINode): Boolean {
+        while (queue.isNotEmpty()) {
+            val current = queue.removeFirst()
+            if (current == destination) return true
+           // TODO - finish this but perhaps I should trade out this digraph for Tensorflow instead
+            // edges[current].
+        }
+        return true
+    }
 }
 
 

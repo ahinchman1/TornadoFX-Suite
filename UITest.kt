@@ -11,29 +11,4 @@ class UITest {
 		FxToolkit.registerPrimaryStage()
 	}
 
-	@Test
-	fun testtextfield() { 
-		
-}
-
-	@Test
-	fun testtextfield() { 
-		
-}
-
-	@Test
-	fun testtextfield() { 
-		
-}
-
-	@Test
-	fun testbutton() { 
-		
-}
-
-	@Test
-	fun testaction() { 
-		
-}
-
 
