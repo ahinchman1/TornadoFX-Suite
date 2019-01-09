@@ -4,6 +4,7 @@ import com.google.gson.*
 import kastree.ast.Node
 import kastree.ast.psi.Parser
 import tornadofx.*
+import java.util.*
 
 class KParser : Controller() {
 
@@ -183,6 +184,7 @@ class KParser : Controller() {
                     "ASSN" -> " = "
                     "NEQ" -> " != "
                     "EQ" -> " == "
+                    "RANGE" -> " .. "
                     else -> oper.token()
                 }
 
@@ -216,7 +218,7 @@ class KParser : Controller() {
             val isolatedName = isolated.name()
 
             if (isolatedName == "root") {
-                detectLambdaControls(nodesElement.asJsonObject, className)
+                detectLambdaControls(nodesElement.asJsonObject, className, LinkedList())
             }
 
             val classProperty = when {
@@ -233,8 +235,8 @@ class KParser : Controller() {
         return when (value.get("form").asJsonPrimitive.toString()) {
             "\"BOOLEAN\"" ->  gValue.asBoolean.toString()
             "\"FLOAT\"" -> gValue.asFloat.toString()
-            "\"INTEGER\"" -> gValue.asInt.toString()
-            "\"CHARACTER\"" -> gValue.asCharacter.toString()
+            "\"INT\"" -> gValue.asInt.toString()
+            "\"CHAR\"" -> gValue.asCharacter.toString()
             "\"NULL\"" -> gValue.asJsonNull.toString()
             else -> "Unrecognized value type"
         }
@@ -322,39 +324,53 @@ class KParser : Controller() {
     private fun valOrVar(node: JsonObject): String = if (node.readOnly()) "val " else "var "
 
     // For TornadoFX DSLs
-    private fun detectLambdaControls(node: JsonObject, className: String) {
+    private fun detectLambdaControls(node: JsonObject,
+                                     className: String,
+                                     nodeHier: LinkedList<String>) {
         val root = node.expr()
 
         if (root.has("lambda")) {
             val rootName = root.asJsonObject.expr().name()
+            nodeHier.addLast(rootName)
 
             // TornadoFX specific
-            addControls<INPUTS>(rootName, className)
+            addControls<INPUTS>(rootName, className, nodeHier)
 
             // get elements in lambda
             val lambda = root.asJsonObject.lambda()
             val elements: JsonArray = lambda.func().block().stmts()
 
             elements.forEach {
-                detectLambdaControls(it.asJsonObject, className)
+                detectLambdaControls(it.asJsonObject, className, nodeHier)
             }
         }
     }
 
     // using the enum class to check for control values here
-    private inline fun <reified T : Enum<T>> addControls(control: String, className: String) {
+    private inline fun <reified T : Enum<T>> addControls(control: String,
+                                                         className: String,
+                                                         nodeHier: LinkedList<String>) {
         enumValues<T>().forEach { it ->
             if (control.toLowerCase() == (it.name).toLowerCase()) {
                 detectedInputs.add(control)
 
                 if (detectedUIControls.containsKey(className)) {
-                    detectedUIControls[className]?.add(control)
+                    val linkedListControl = printLinked(nodeHier)
+                    detectedUIControls[className]?.add(linkedListControl)
                 } else {
                     val controlCollection = ArrayList<String>()
                     detectedUIControls[className] = controlCollection
                 }
             }
         }
+    }
+
+    private fun printLinked(linkedList: LinkedList<String>): String {
+        var printlinked = ""
+        linkedList.toArray().forEachIndexed { index, node ->
+            printlinked += if (index != linkedList.size - 1) "$node -> " else "$node"
+        }
+        return printlinked
     }
 
     private fun JsonObject.getType() = this.pieces().getObject(0).name()

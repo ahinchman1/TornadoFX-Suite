@@ -52,9 +52,17 @@ class FXTestGenerator: Controller() {
                 println("\t" + property.propertyName + ": " + property.propertyType)
             }
             println("CLASS METHODS: ")
+            var buildMethods = ""
             it.classMethods.forEach { method ->
-                println("\t" + method)
+                buildMethods += "-----------------\n|\tname:${method.name}\n|\tparameters: "
+                    method.parameters.forEach { parameter ->
+                        buildMethods += "|\t\t${parameter.valOrVar} ${parameter.propertyName}: " +
+                                "${parameter.propertyType}\n"
+                    }
+                buildMethods += "|\t method" + method.methodStatements + "\n-----------------\n"
             }
+            println(buildMethods)
+
         }
 
         if (scanner.detectedUIControls.size > 0) {

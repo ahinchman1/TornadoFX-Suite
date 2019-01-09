@@ -20,10 +20,12 @@ class FXTestBuilders : Controller() {
 
         collection.forEach {
             val classname = it.key
-            it.value.forEach {
-                file += testStub(classname, it)
+            it.value.forEach {control ->
+                file += testStub(classname, control)
             }
         }
+
+        file += ")"
 
         // write string to document
         File("UITest.kt").printWriter().use {out -> out.println(file)}
