@@ -45,7 +45,7 @@ class FXTestGenerator: Controller() {
 
     private fun consoleLog() {
         // print and format classes
-        scanner.classes.forEach {
+        /*scanner.classes.forEach {
             println("CLASS NAME: " + it.className)
             println("CLASS PROPERTIES: ")
             it.classProperties.forEach { property ->
@@ -63,12 +63,25 @@ class FXTestGenerator: Controller() {
             }
             println(buildMethods)
 
-        }
+        }*/
 
-        if (scanner.detectedUIControls.size > 0) {
+        // TODO - this is buggy as hell I need to fix it smh
+        if (scanner.mapClassViewNodes.size > 0) {
             println("DETECTED LAMBDA ELEMENTS IN PROJECT: ")
-            scanner.detectedUIControls.forEach {
-                println(it)
+            scanner.mapClassViewNodes.forEach { className, digraph ->
+                println(className)
+                digraph.viewNodes.forEach { bucket, children ->
+                    val nodeLevel = bucket.level
+                    var viewNode = "$nodeLevel \t"
+
+                    children.forEachIndexed { index, node ->
+                        viewNode += if (index < children.size) {
+                            "${node.uiNode} -> "
+                        } else "${node.uiNode}\n"
+
+                    }
+                    println(viewNode)
+                }
             }
         }
 

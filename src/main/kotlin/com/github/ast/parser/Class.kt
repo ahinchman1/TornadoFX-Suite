@@ -1,5 +1,6 @@
 package com.github.ast.parser
 
+import com.google.gson.JsonObject
 import java.util.*
 
 data class ClassBreakDown(val className: String,
@@ -17,52 +18,81 @@ data class Method(val name: String,
                   val viewNodesAffected: ArrayList<String>)
 
 data class UINode(val uiNode: String,
-                val path: ArrayList<String>,
-                val associatedFunctions: ArrayList<String>)
+                  val level: Int,
+                  val nodeTree: JsonObject, // how to identify the nodeTree
+                  val associatedFunctions: ArrayList<String>)
+
+enum class VisitStatus {
+    UNVISITED, VISITING, VISITED
+}
 
 
-// TODO - Rethink behavior for this since there's an architecture that matters
 /**
  * Store view hierarchy tree here
- * TODO - Can Tensorflow do directional graphing?
  */
-class Digraph(val edges: HashMap<UINode, HashSet<UINode>>) {
+class Digraph {
 
-    // TODO - adding a Node can't just be anywhere, I need to modify to find the path probably?
-    fun addNode(node: UINode) {
-        if (!edges.containsKey(node)) {
-            edges[node] = HashSet()
-        } else throw AssertionError("Duplicate node $node")
+    val viewNodes = LinkedHashMap<UINode, HashSet<UINode>>()
+
+    // add node to list
+    fun addNode(node: UINode): Boolean {
+        var result = false
+        if (!viewNodes.containsKey(node)) {
+            viewNodes[node] = HashSet()
+            result = true
+        }
+        return result
     }
 
-    fun addEdge(source: UINode, destination: UINode) {
-        if (edges.containsKey(source)) {
-            val getSource = edges[source]
-            if (getSource != null && getSource.contains(destination)) {
+    fun removeNode(node: UINode): Boolean {
+        var result = false
+        if (viewNodes.containsKey(node)) {
+            viewNodes.remove(node)
+            for (entry in viewNodes.entries) {
+                if (entry.value.contains(node)) {
+                    viewNodes[entry.key]?.remove(node)
+                }
+            }
+            result = true
+        }
+        return result
+    }
+
+    // add child node
+    fun addEdge(source: UINode, destination: UINode): Boolean {
+        var result = false
+        if (viewNodes.containsKey(source)) {
+            val getSource = viewNodes[source]
+            if (getSource != null && !getSource.contains(destination)) {
                 getSource.add(destination)
+                result = true
             }
         }
+        return result
     }
 
-    fun removeEdge(source: UINode, destination: UINode) {
-        if (edges.containsKey(source)) {
-            val getSource = edges[source]
+    fun removeEdge(source: UINode, destination: UINode): Boolean {
+        var result = false
+        if (viewNodes.containsKey(source)) {
+            val getSource = viewNodes[source]
             if (getSource != null && getSource.contains(destination)) {
                 getSource.remove(destination)
+                result = true
             }
         }
+        return result
     }
 
     fun isAdjacent(source: UINode, destination: UINode): Boolean =
-            edges[source]?.contains(destination) ?: false
+            viewNodes[source]?.contains(destination) ?: false
 
-    fun hasNode(node: UINode): Boolean = edges.containsKey(node)
+    fun hasNode(node: UINode): Boolean = viewNodes.containsKey(node)
 
-    fun getChildren(node: UINode): HashSet<UINode> = edges[node] ?: HashSet()
+    fun getChildren(node: UINode): HashSet<UINode> = viewNodes[node] ?: HashSet()
 
     // use bfs for nodes since trees are probably wider than they are deep
     fun breadthFirstSearch(source: UINode, destination: UINode): Boolean {
-        if (!edges.containsKey(source) || !edges.contains(destination)) {
+        if (!viewNodes.containsKey(source) || !viewNodes.contains(destination)) {
             return false
         }
         val queue = LinkedList<UINode>()
@@ -71,14 +101,30 @@ class Digraph(val edges: HashMap<UINode, HashSet<UINode>>) {
     }
 
     private fun breadthFirstSearch(queue: LinkedList<UINode>, destination: UINode): Boolean {
+        val visited = HashMap<UINode, VisitStatus>()
         while (queue.isNotEmpty()) {
             val current = queue.removeFirst()
+            visited[current] = VisitStatus.VISITING
             if (current == destination) return true
-           // TODO - finish this but perhaps I should trade out this digraph for Tensorflow instead
-            // edges[current].
+
+            viewNodes[current]?.iterator()?.forEach { neighbor ->
+                if (visited.containsKey(neighbor)) {
+                    if (visited[neighbor] == VisitStatus.UNVISITED) {
+                        queue.addLast(neighbor)
+                    }
+                } else {
+                    queue.addLast(neighbor)
+                }
+            }
+            visited[current] = VisitStatus.VISITED
         }
-        return true
+        return false
     }
+
+    fun getElementByIndex(index: Int): UINode {
+        return (viewNodes.keys).toTypedArray()[index]
+    }
+
 }
 
 

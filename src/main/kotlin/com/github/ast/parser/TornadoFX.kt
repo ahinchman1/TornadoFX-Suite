@@ -16,7 +16,7 @@ enum class COMPONENTS {
 }
 
 enum class INPUTS {
-    Form, TextField, DateField, Button, Action,
+    Form, TextField, DateField, Button,
     RadioButton, ToggleButton, ComboButton, Checkbox,
     Item, Paginator, PasswordField
 }

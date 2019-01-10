@@ -5,13 +5,14 @@ import kastree.ast.Node
 import kastree.ast.psi.Parser
 import tornadofx.*
 import java.util.*
+import kotlin.collections.HashMap
 
 class KParser : Controller() {
 
     var classes = ArrayList<ClassBreakDown>()
     private var independentFunctions = ArrayList<String>()
-    var detectedInputs = ArrayList<String>()
     var detectedUIControls = HashMap<String, ArrayList<String>>()
+    var mapClassViewNodes = HashMap<String, Digraph>()
     val gson = Gson()
 
     fun parseAST(textFile: String) {
@@ -28,6 +29,7 @@ class KParser : Controller() {
     private fun breakDownClass(className: String, file: Node.File) {
         val classProperties = ArrayList<Property>()
         val classMethods = ArrayList<Method>()
+        val classNodeGraph = Digraph()
 
         // Save for all files
         (file.decls[0] as Node.Decl.Structured).members.forEach {
@@ -121,7 +123,7 @@ class KParser : Controller() {
             expr.has("elems") -> getElems(expr.elems(), buildStmt)
             expr.has("params") -> getParams(expr.params(), buildStmt)
             expr.has("value") -> buildStmt + getValue(expr)
-            expr.size() == 0 -> buildStmt
+            expr.size() == 0 -> {}
             else -> println(expr)
         }
         return buildStmt
@@ -173,7 +175,6 @@ class KParser : Controller() {
         return buildArgs
     }
 
-    // TODO - look into other types of binary operations
     private fun breakdownBinaryOperation(expr: JsonObject, buildStmt: String): String {
         val oper = expr.oper()
         val operator = when {
@@ -218,7 +219,9 @@ class KParser : Controller() {
             val isolatedName = isolated.name()
 
             if (isolatedName == "root") {
+                println("DETECTION ORDER")
                 detectLambdaControls(nodesElement.asJsonObject, className, LinkedList())
+                println("END OF DETECTION ORDER")
             }
 
             val classProperty = when {
@@ -323,44 +326,65 @@ class KParser : Controller() {
 
     private fun valOrVar(node: JsonObject): String = if (node.readOnly()) "val " else "var "
 
-    // For TornadoFX DSLs
+    // For TornadoFX DSLs which will also build a digraph representation
     private fun detectLambdaControls(node: JsonObject,
                                      className: String,
-                                     nodeHier: LinkedList<String>) {
+                                     nodeHier: LinkedList<String>,
+                                     nodeLevel: Int = 0) {
         val root = node.expr()
 
         if (root.has("lambda")) {
             val rootName = root.asJsonObject.expr().name()
             nodeHier.addLast(rootName)
+            println("$nodeLevel - $rootName")
+
+            /**
+             * Create Digraph if the class is new, otherwise, add node to the existing digraph.
+             */
+            val graphNode = UINode(rootName, nodeLevel, root, ArrayList())
+            if (mapClassViewNodes.contains(className)) {
+                mapClassViewNodes[className]?.addNode(graphNode)
+            } else {
+                val digraph = Digraph()
+                digraph.addNode(graphNode)
+                mapClassViewNodes[className] = digraph
+            }
+
+            /**
+             * Add an edge (a child node) to the parent node level if there is a parent
+             */
+            val parentLevel = nodeLevel - 1
+            if (parentLevel >= 0) {
+                // find the parent node by index
+                mapClassViewNodes[className]?.getElementByIndex(parentLevel)?.let {
+                    mapClassViewNodes[className]?.addEdge(it, graphNode)
+                }
+            }
+
 
             // TornadoFX specific
-            addControls<INPUTS>(rootName, className, nodeHier)
+            addControls<INPUTS>(rootName, className)
 
             // get elements in lambda
             val lambda = root.asJsonObject.lambda()
             val elements: JsonArray = lambda.func().block().stmts()
 
             elements.forEach {
-                detectLambdaControls(it.asJsonObject, className, nodeHier)
+                detectLambdaControls(it.asJsonObject, className, nodeHier, nodeLevel + 1)
             }
         }
     }
 
     // using the enum class to check for control values here
     private inline fun <reified T : Enum<T>> addControls(control: String,
-                                                         className: String,
-                                                         nodeHier: LinkedList<String>) {
+                                                         className: String) {
         enumValues<T>().forEach { it ->
             if (control.toLowerCase() == (it.name).toLowerCase()) {
-                detectedInputs.add(control)
-
-                if (detectedUIControls.containsKey(className)) {
-                    val linkedListControl = printLinked(nodeHier)
-                    detectedUIControls[className]?.add(linkedListControl)
-                } else {
+                if (!detectedUIControls.containsKey(className)) {
                     val controlCollection = ArrayList<String>()
                     detectedUIControls[className] = controlCollection
                 }
+                detectedUIControls[className]?.add(control)
             }
         }
     }

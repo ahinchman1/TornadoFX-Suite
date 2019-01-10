@@ -60,7 +60,6 @@ class MainView : View() {
                         fxTestGenerator.askUserDialog()
                         //fxTestGenerator.fetchAsync(it)
                     }
-                    fxTestGenerator.kotlinFiles.forEach { println(it) }
                 }
                 vboxConstraints {
                     marginLeft = 300.0
