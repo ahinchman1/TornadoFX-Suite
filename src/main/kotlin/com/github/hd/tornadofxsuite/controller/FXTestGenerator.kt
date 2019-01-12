@@ -64,19 +64,18 @@ class FXTestGenerator: Controller() {
             println(buildMethods)
 
         }*/
-
-        // TODO - this is buggy as hell I need to fix it smh
+        
         if (scanner.mapClassViewNodes.size > 0) {
             println("DETECTED LAMBDA ELEMENTS IN PROJECT: ")
             scanner.mapClassViewNodes.forEach { className, digraph ->
                 println(className)
                 digraph.viewNodes.forEach { bucket, children ->
                     val nodeLevel = bucket.level
-                    var viewNode = "$nodeLevel \t"
+                    var viewNode = "$nodeLevel \t${bucket.uiNode}"
 
                     children.forEachIndexed { index, node ->
                         viewNode += if (index < children.size) {
-                            "${node.uiNode} -> "
+                            " -> ${node.uiNode} "
                         } else "${node.uiNode}\n"
 
                     }
