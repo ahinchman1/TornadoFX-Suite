@@ -30,7 +30,7 @@ class Dialog : Fragment() {
                 scanner.detectedUIControls.forEach { view ->
                     items.add(view.key)
                     view.value.forEach { input ->
-                        items.add("\t" + input)
+                        items.add("\t${input.uiNode}")
                     }
                 }
             }
@@ -38,7 +38,11 @@ class Dialog : Fragment() {
 
         button("yeaaa") {
             action {
-                testBuilder.generateTests(scanner.detectedUIControls)
+                testBuilder.generateTests(
+                        scanner.viewImports,
+                        scanner.mapClassViewNodes,
+                        scanner.detectedUIControls
+                )
                 view.overlay.apply {
                     style {
                         opacity = 0.0

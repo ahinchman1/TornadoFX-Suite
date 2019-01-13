@@ -11,31 +11,32 @@ class KParser : Controller() {
 
     var classes = ArrayList<ClassBreakDown>()
     private var independentFunctions = ArrayList<String>()
-    var detectedUIControls = HashMap<String, ArrayList<String>>()
+    var detectedUIControls = HashMap<String, ArrayList<UINode>>()
     var mapClassViewNodes = HashMap<String, Digraph>()
+    var viewImports = HashMap<String, String>()
     val gson = Gson()
 
-    fun parseAST(textFile: String) {
+    fun parseAST(textFile: String, path: String) {
+        //if (textFile.contains)
         val file = Parser.parseFile(textFile, true)
 
         file.decls.forEach {node ->
             when (node) {
-                is Node.Decl.Structured -> breakDownClass(node.name, file)
+                is Node.Decl.Structured -> breakDownClass(node.name, file, path)
                 is Node.Decl.Func -> node.name ?: independentFunctions.add(node.name.toString())
             }
         }
     }
 
-    private fun breakDownClass(className: String, file: Node.File) {
+    private fun breakDownClass(className: String, file: Node.File, path: String) {
         val classProperties = ArrayList<Property>()
         val classMethods = ArrayList<Method>()
-        val classNodeGraph = Digraph()
 
         // Save for all files
         (file.decls[0] as Node.Decl.Structured).members.forEach {
             when (it) {
                 is Node.Decl.Structured -> println("this is probably a companion object")
-                is Node.Decl.Property -> convertToClassProperty(it, classProperties, className)
+                is Node.Decl.Property -> convertToClassProperty(it, classProperties, className, path)
                 is Node.Decl.Func -> breakdownClassMethod(it, classMethods)
             }
         }
@@ -207,7 +208,8 @@ class KParser : Controller() {
      */
     private fun convertToClassProperty(property: Node.Decl.Property,
                                        propList: ArrayList<Property>,
-                                       className: String) {
+                                       className: String,
+                                       path: String) {
         val secondBit = "expr=Call(expr=Name(name="
         val string = property.toString()
 
@@ -219,6 +221,7 @@ class KParser : Controller() {
             val isolatedName = isolated.name()
 
             if (isolatedName == "root") {
+                viewImports[className] = saveViewImport(path)
                 println("DETECTION ORDER")
                 detectLambdaControls(nodesElement.asJsonObject, className, LinkedList())
                 println("END OF DETECTION ORDER")
@@ -232,6 +235,9 @@ class KParser : Controller() {
             propList.add(classProperty)
         }
     }
+
+    private fun saveViewImport(path: String): String =
+            path.split("kotlin")[1].replace("/", ".").substring(1)
 
     private fun getValue(value: JsonObject): String {
         val gValue = value.get("value")
@@ -356,14 +362,14 @@ class KParser : Controller() {
             val parentLevel = nodeLevel - 1
             if (parentLevel >= 0) {
                 // find the parent node by index
-                mapClassViewNodes[className]?.getElementByIndex(parentLevel)?.let {
+                mapClassViewNodes[className]?.findLastElementWithParentLevel(parentLevel)?.let {
                     mapClassViewNodes[className]?.addEdge(it, graphNode)
                 }
             }
 
 
             // TornadoFX specific
-            addControls<INPUTS>(rootName, className)
+            addControls<INPUTS>(graphNode, className)
 
             // get elements in lambda
             val lambda = root.asJsonObject.lambda()
@@ -376,12 +382,12 @@ class KParser : Controller() {
     }
 
     // using the enum class to check for control values here
-    private inline fun <reified T : Enum<T>> addControls(control: String,
+    private inline fun <reified T : Enum<T>> addControls(control: UINode,
                                                          className: String) {
         enumValues<T>().forEach { it ->
-            if (control.toLowerCase() == (it.name).toLowerCase()) {
+            if (control.uiNode.toLowerCase() == (it.name).toLowerCase()) {
                 if (!detectedUIControls.containsKey(className)) {
-                    val controlCollection = ArrayList<String>()
+                    val controlCollection = ArrayList<UINode>()
                     detectedUIControls[className] = controlCollection
                 }
                 detectedUIControls[className]?.add(control)

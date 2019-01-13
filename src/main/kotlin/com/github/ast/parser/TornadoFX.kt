@@ -6,19 +6,24 @@ import tornadofx.*
 import java.util.ArrayList
 import java.util.HashMap
 
-enum class MVC {
-    ItemViewModel, ViewModel, Controller, View
+enum class MODELS {
+    ItemViewModel, ViewModel
 }
 
 enum class COMPONENTS {
-    BORDERPANE, LISTVIEW, TABLEVIEW, VBOX, HBOX,
-    DATAGRID, IMAGEVIEW
+    View, Fragment
 }
 
+enum class NODES {
+    BorderPane, ListView, TableView, VBox, HBox,
+    DataGrid, ImageView, GridPane, Row, Form, FieldSet,
+    TextField, Button, DateField, ComboButton, ComboForm,
+    CheckBox, Paginator, PasswordField, TreeView, TabView
+}
+
+// detected inputs to test, will build over time
 enum class INPUTS {
-    Form, TextField, DateField, Button,
-    RadioButton, ToggleButton, ComboButton, Checkbox,
-    Item, Paginator, PasswordField
+    TextField, Button, Form
 }
 
 class TornadoFXInputs(viewClass: String, inputs: ArrayList<String>) {
@@ -27,13 +32,4 @@ class TornadoFXInputs(viewClass: String, inputs: ArrayList<String>) {
 
     val inputsProperty = SimpleObjectProperty(this, "", inputs)
     var inputs by inputsProperty
-}
-
-class TornadoFXInputsModel: ItemViewModel<TornadoFXInputs>() {
-    val ownerName = bind(TornadoFXInputs::viewClassProperty)
-    val catName = bind(TornadoFXInputs::inputsProperty)
-}
-
-class TornadoFXInputsScope:  Scope() {
-    var collection = HashMap<String, ArrayList<String>>()
 }

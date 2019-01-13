@@ -1,5 +1,6 @@
 package com.github.hd.tornadofxsuite
 
+import com.github.hd.tornadofxsuite.view.MainView
 import javafx.beans.property.SimpleDoubleProperty
 import javafx.beans.property.SimpleIntegerProperty
 import javafx.beans.property.SimpleStringProperty
@@ -43,7 +44,7 @@ class ControlsTest {
 
         view.textfield(SimpleIntegerProperty(103))  // w. fix 184
 
-        view.textfield(SimpleDoubleProperty(100.131))  // also fixed 184
+        // view.textfield(SimpleDoubleProperty(100.131))  // also fixed 184
     }
 
     //@Test

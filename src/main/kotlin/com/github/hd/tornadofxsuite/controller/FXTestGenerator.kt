@@ -40,7 +40,7 @@ class FXTestGenerator: Controller() {
 
     private fun fileOutputRead(path: Path) {
         val file = File(path.toUri())
-        readFiles(file)
+        readFiles(file, path.toUri().path)
     }
 
     private fun consoleLog() {
@@ -92,7 +92,7 @@ class FXTestGenerator: Controller() {
         }
     }
 
-    private fun readFiles(file: File) {
+    private fun readFiles(file: File, path: String) {
         val fileText = file.bufferedReader().use(BufferedReader::readText)
         if (filterFiles(fileText)) {
             view.console.items.add(view.consolePath + file.toString())
@@ -100,7 +100,7 @@ class FXTestGenerator: Controller() {
             kotlinFiles.add(file)
             view.console.items.add(fileText)
             view.console.items.add("===================================================================")
-            scanner.parseAST(fileText)
+            scanner.parseAST(fileText, path)
         }
     }
 

@@ -1,5 +1,8 @@
 package com.github.hd.tornadofxsuite.controller
 
+import com.github.ast.parser.Digraph
+import com.github.ast.parser.TestClassInfo
+import com.github.ast.parser.UINode
 import tornadofx.*
 import java.io.File
 import java.util.ArrayList
@@ -8,27 +11,64 @@ import java.util.HashMap
 class FXTestBuilders : Controller() {
 
     // Dictionary of testing components
-    fun generateTests(collection: HashMap<String, ArrayList<String>>) {
+    fun generateTests(
+            viewImports: HashMap<String, String>,
+            mappedViewNodes: HashMap<String, Digraph>,
+            detectedUIControls: HashMap<String, ArrayList<UINode>>
+    ) {
+
+        // Step 1: Breakup classes
+        val classes = breakupClasses(viewImports, mappedViewNodes, detectedUIControls)
+
+        // Step 2: Write each file with their imports
+        for (item in classes) {
+            writeTestFile(item)
+        }
+    }
+
+    private fun breakupClasses(
+            viewImports: HashMap<String, String>,
+            mappedViewNodes: HashMap<String, Digraph>,
+            detectedUIControls: HashMap<String, ArrayList<UINode>>
+    ): ArrayList<TestClassInfo> {
+        val classes = ArrayList<TestClassInfo>()
+
+        viewImports.forEach {className, item ->
+            // check that all items are there
+            if (detectedUIControls.containsKey(className) &&
+                    mappedViewNodes.containsKey(className)) {
+                val uiControls = detectedUIControls[className] ?: ArrayList()
+                val mappedNodes = mappedViewNodes[className] ?: Digraph()
+
+                classes.add(TestClassInfo(className, item, uiControls, mappedNodes))
+            } else println("Missing info for $className")
+        }
+
+        return classes
+    }
+
+    private fun writeTestFile(classInfo: TestClassInfo) {
+
         var file = "import javafx.stage.Stage\n" +
                 "import org.junit.Test\n" +
                 "import org.testfx.api.FxToolkit\n" +
                 "import org.testfx.framework.junit.ApplicationTest\n" +
                 "import tornadofx.*\n" +
-                "import kotlin.test.assertEquals\n\n" +
-                "class UITest {\n" +
+                "import kotlin.test.assertEquals\n" +
+                "import ${classInfo.viewImport}\n\n" +
+                "class ${classInfo.className}Test {\n" +
                 setup()
 
-        collection.forEach {
-            val classname = it.key
-            it.value.forEach {control ->
-                file += testStub(classname, control)
-            }
+        // Step 3: According to a dictionary of tests, write combinations
+        classInfo.detectedUIControls.forEach {control ->
+            file += testStub(classInfo.className, classInfo.mappedViewNodes, control)
         }
 
         file += ")"
 
         // write string to document
-        File("UITest.kt").printWriter().use {out -> out.println(file)}
+        File("${classInfo.className}Test.kt").printWriter().use {out -> out.println(file)}
+
     }
 
     private fun setup(): String {
@@ -42,10 +82,14 @@ class FXTestBuilders : Controller() {
         return ""
     }
 
-    // start here with PBT
-    private fun testStub(className: String, node: String): String {
+    private fun testStub(view: String, digraph: Digraph, node: UINode): String {
+        // get node referencing here
+        digraph.breadthFirstSearch(digraph.root, node)
+
         return "\t@Test\n" +
-                "\tfun test" + node + "() { \n" +
+                "\tfun ${node.uiNode}ClickTest() { \n" +
+                "\t$view()\n\n" +
+                "" +
                 "\t\t\n" +
                 "}\n\n"
     }

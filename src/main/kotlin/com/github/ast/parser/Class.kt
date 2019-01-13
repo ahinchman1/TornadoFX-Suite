@@ -17,6 +17,12 @@ data class Method(val name: String,
                   val methodStatements: ArrayList<String>,
                   val viewNodesAffected: ArrayList<String>)
 
+data class TestClassInfo(val className: String,
+                         val viewImport: String,
+                         val detectedUIControls: ArrayList<UINode>,
+                         val mappedViewNodes: Digraph)
+
+
 data class UINode(val uiNode: String,
                   val level: Int,
                   val nodeTree: JsonObject, // how to identify the nodeTree
@@ -33,14 +39,21 @@ enum class VisitStatus {
 class Digraph {
 
     val viewNodes = LinkedHashMap<UINode, HashSet<UINode>>()
+    lateinit var root: UINode
+    var size = 0
 
     // add node to list
     fun addNode(node: UINode): Boolean {
         var result = false
+        if (viewNodes.isEmpty()) {
+            root = node
+        }
+
         if (!viewNodes.containsKey(node)) {
             viewNodes[node] = HashSet()
             result = true
         }
+        size++
         return result
     }
 
@@ -96,24 +109,56 @@ class Digraph {
             return false
         }
         val queue = LinkedList<UINode>()
+        println("EXECUTING SEARCH")
         queue.addLast(source)
+        println(queue.toString())
         return breadthFirstSearch(queue, destination)
     }
 
-    private fun breadthFirstSearch(queue: LinkedList<UINode>, destination: UINode): Boolean {
+    /*private fun breadthFirstSearchCorrect(source: UINode, destination: UINode): Boolean {
+        if (viewNodes.containsKey(destination)) {
+            val visited = HashMap<UINode, VisitStatus>()
+            val path = LinkedList<UINode>() // path source
+            val queue = LinkedList<UINode>() // to trace through
+
+            // mark current node as visited and enqueue it
+            visited[source] = VisitStatus.VISITING
+            path.add(source)
+
+            var current = source
+            if (current == destination) return true
+
+
+            viewNodes[current]?.iterator()?.forEach {childNodes ->
+
+            }
+        }
+
+    }*/
+
+    private fun breadthFirstSearch(
+            queue: LinkedList<UINode>,
+            destination: UINode
+    ): Boolean {
         val visited = HashMap<UINode, VisitStatus>()
         while (queue.isNotEmpty()) {
-            val current = queue.removeFirst()
+            val current = queue.remove()
+
             visited[current] = VisitStatus.VISITING
             if (current == destination) return true
 
             viewNodes[current]?.iterator()?.forEach { neighbor ->
                 if (visited.containsKey(neighbor)) {
                     if (visited[neighbor] == VisitStatus.UNVISITED) {
+                        println(neighbor.uiNode)
                         queue.addLast(neighbor)
+                        println("Adding ${neighbor.uiNode}")
+                        println(queue.toString())
                     }
                 } else {
                     queue.addLast(neighbor)
+                    println("Adding ${neighbor.uiNode}")
+                    println(queue.toString())
                 }
             }
             visited[current] = VisitStatus.VISITED
@@ -121,10 +166,19 @@ class Digraph {
         return false
     }
 
-    fun getElementByIndex(index: Int): UINode {
-        return (viewNodes.keys).toTypedArray()[index]
-    }
+    fun getElementByIndex(index: Int): UINode = (viewNodes.keys).toTypedArray()[index]
 
+    fun findLastElementWithParentLevel(parentLevel: Int): UINode {
+        var lastNode = root
+
+        viewNodes.keys.forEach { node ->
+            if (node.level == parentLevel) {
+                lastNode = node
+            }
+        }
+
+        return lastNode
+    }
 }
 
 
