@@ -3,6 +3,7 @@ package com.github.hd.tornadofxsuite.controller
 import com.github.ast.parser.Digraph
 import com.github.ast.parser.TestClassInfo
 import com.github.ast.parser.UINode
+import javafx.scene.control.TextField
 import tornadofx.*
 import java.io.File
 import java.util.ArrayList
@@ -83,15 +84,35 @@ class FXTestBuilders : Controller() {
     }
 
     private fun testStub(view: String, digraph: Digraph, node: UINode): String {
-        // get node referencing here
-        digraph.breadthFirstSearch(digraph.root, node)
+        val nodePath = digraph.depthFirstSearch(digraph.root, node)
 
         return "\t@Test\n" +
                 "\tfun ${node.uiNode}ClickTest() { \n" +
-                "\t$view()\n\n" +
-                "" +
+                "\t\tval view = $view()\n\n" +
+                "\t\tval ${node.uiNode} = ${referenceNode(nodePath)}\n" + // reference node
                 "\t\t\n" +
-                "}\n\n"
+                "\t\t\n" + // perform action on node
+                "\t}\n\n"
+    }
+
+    private fun referenceNode(nodePath: Array<UINode>): String {
+        var nodeReference = ""
+
+        nodePath.forEachIndexed { index, node ->
+            nodeReference += if (index == 0) {
+                "root"
+            } else node.uiNode
+        }
+
+        return nodeReference
+    }
+
+    private fun performAction(uiNode: UINode) {
+        when (uiNode.uiNode) {
+            "form" -> TODO()
+            "textfield" -> TODO()
+            "button" -> TODO()
+        }
     }
 
     private fun buildTextFieldTest(): String {

@@ -187,6 +187,7 @@ class KParser : Controller() {
                     "NEQ" -> " != "
                     "EQ" -> " == "
                     "RANGE" -> " .. "
+                    "AS" -> " as "
                     else -> oper.token()
                 }
 
