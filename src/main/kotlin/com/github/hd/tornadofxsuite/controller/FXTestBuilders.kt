@@ -79,19 +79,17 @@ class FXTestBuilders : Controller() {
                 "\t}\n\n"
     }
 
-    private fun replicateView(): String {
-        return ""
-    }
-
     private fun testStub(view: String, digraph: Digraph, node: UINode): String {
         val nodePath = digraph.depthFirstSearch(digraph.root, node)
+        val performAndExpectation = performAction(node)
 
         return "\t@Test\n" +
                 "\tfun ${node.uiNode}ClickTest() { \n" +
                 "\t\tval view = $view()\n\n" +
                 "\t\tval ${node.uiNode} = ${referenceNode(nodePath)}\n" + // reference node
                 "\t\t\n" +
-                "\t\t\n" + // perform action on node
+                "\t\t${performAndExpectation.first}\n" + // TODO perform action on node
+                "\t\t${performAndExpectation.second}\n" + // TODO check UI based on node expectation
                 "\t}\n\n"
     }
 
@@ -107,12 +105,13 @@ class FXTestBuilders : Controller() {
         return nodeReference
     }
 
-    private fun performAction(uiNode: UINode) {
-        when (uiNode.uiNode) {
+    private fun performAction(node: UINode): Pair<String, String> {
+        when (node.uiNode) {
             "form" -> TODO()
             "textfield" -> TODO()
             "button" -> TODO()
         }
+        return Pair("", "")
     }
 
     private fun buildTextFieldTest(): String {
