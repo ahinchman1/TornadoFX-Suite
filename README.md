@@ -20,6 +20,7 @@ You'll notice some classifications for the way the issues are labeled.  Ideally,
 * `FEATURE`
 * `BUG`
 * `INVESTIGATION`
+* `ENHANCEMENT`
 
 Where a `category` is just an arbitary set of concerns [`FEATURE`, `BUG`, `INVESTIGATION`] I made to address different kinds of issues as this project progresses.
 
@@ -51,3 +52,6 @@ I like to go with Yegor Bugayenko's definition, as quoted in his [blog](https://
 
 ## Investigation
 Is there something down the road that might be relevant to later stages? Go ahead in put in a issue for discussion/invesigation.
+
+## Enhancement
+Improve on a feature/functionality.
