@@ -7,7 +7,7 @@ import tornadofx.*
 import java.util.*
 import kotlin.collections.HashMap
 
-class KParser : Controller() {
+class KParser: Controller() {
 
     var classes = ArrayList<ClassBreakDown>()
     private var independentFunctions = ArrayList<String>()
@@ -17,7 +17,7 @@ class KParser : Controller() {
     val gson = Gson()
 
     fun parseAST(textFile: String, path: String) {
-        //if (textFile.contains)
+        // if (textFile.contains)
         val file = Parser.parseFile(textFile, true)
 
         file.decls.forEach {node ->
@@ -107,9 +107,13 @@ class KParser : Controller() {
                     isolatedName,
                     breakdownBinaryOperation(decl.expr(), "")
             )
+            decl.expr().has("value") -> Property(
+                    valOrVar(decl),
+                    isolatedName,
+                    getPrimitiveType(decl.expr()))
             else -> TODO()
         }
-        val declaration = "$buildStmt${property.valOrVar} $isolatedName: $isolated ="
+        val declaration = "$buildStmt${property.valOrVar} $isolatedName: ${property.propertyType} ="
         return "$declaration = ${breakdownExpr(decl, buildStmt)}"
     }
 
@@ -159,9 +163,6 @@ class KParser : Controller() {
         return buildElems
     }
 
-    /**
-     * Gets arguments in expressions
-     */
     private fun getArguments(arguments: JsonArray, buildStmt: String): String {
         var buildArgs = "$buildStmt("
         if (arguments.size() > 0) {
@@ -174,6 +175,33 @@ class KParser : Controller() {
             }
         } else buildArgs += ")"
         return buildArgs
+    }
+
+    private fun getValue(value: JsonObject): String {
+        val gValue = value.get("value")
+        return when (value.get("form").asJsonPrimitive.toString()) {
+            "\"BOOLEAN\"" ->  gValue.asBoolean.toString()
+            "\"BYTE\"" -> gValue.asByte.toString()
+            "\"CHAR\"" -> gValue.asCharacter.toString()
+            "\"DOUBLE\"" -> gValue.asDouble.toString()
+            "\"FLOAT\"" -> gValue.asFloat.toString()
+            "\"INT\"" -> gValue.asInt.toString()
+            "\"NULL\"" -> "null"
+            else -> "Unrecognized value type"
+        }
+    }
+
+    private fun getPrimitiveType(value: JsonObject): String {
+        return when (value.get("form").asJsonPrimitive.toString()) {
+            "\"BOOLEAN\"" -> "Boolean"
+            "\"BYTE\"" -> "Byte"
+            "\"CHAR\"" -> "Char"
+            "\"DOUBLE\"" -> "Double"
+            "\"FLOAT\"" -> "Float"
+            "\"INT\"" -> "Int"
+            "\"NULL\"" -> "null"
+            else -> "Unrecognized value type" // object type probs
+        }
     }
 
     private fun breakdownBinaryOperation(expr: JsonObject, buildStmt: String): String {
@@ -214,17 +242,18 @@ class KParser : Controller() {
         val secondBit = "expr=Call(expr=Name(name="
         val string = property.toString()
 
-        val nodesElement: JsonElement = gson.toJsonTree(property)
+        property.vars[0]?.name
+
+        val node = gson.toJsonTree(property).asJsonObject
 
         if (string.contains(secondBit)) {
-            val node = nodesElement.asJsonObject
             val isolated = node.vars().getObject(0)
             val isolatedName = isolated.name()
 
             if (isolatedName == "root") {
                 viewImports[className] = saveViewImport(path)
                 println("DETECTION ORDER")
-                detectLambdaControls(nodesElement.asJsonObject, className, LinkedList())
+                detectLambdaControls(node, className, LinkedList())
                 println("END OF DETECTION ORDER")
             }
 
@@ -239,18 +268,6 @@ class KParser : Controller() {
 
     private fun saveViewImport(path: String): String =
             path.split("kotlin")[1].replace("/", ".").substring(1)
-
-    private fun getValue(value: JsonObject): String {
-        val gValue = value.get("value")
-        return when (value.get("form").asJsonPrimitive.toString()) {
-            "\"BOOLEAN\"" ->  gValue.asBoolean.toString()
-            "\"FLOAT\"" -> gValue.asFloat.toString()
-            "\"INT\"" -> gValue.asInt.toString()
-            "\"CHAR\"" -> gValue.asCharacter.toString()
-            "\"NULL\"" -> gValue.asJsonNull.toString()
-            else -> "Unrecognized value type"
-        }
-    }
 
     /**
      * Observable class properties ought to be refactored to use the recursive breakdown
@@ -296,6 +313,7 @@ class KParser : Controller() {
     /**
      * This is probably fine for now
      */
+
     private fun getProperty(node: JsonObject, isolated: JsonObject, isolatedName: String): Property {
 
         val type = node.expr().expr().name()
