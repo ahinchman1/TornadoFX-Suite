@@ -13,6 +13,10 @@ Testing has always been a challenge for engineers - many of us are opiniated on 
 
 Interested in the project? It's open source and anyone is welcome to contribute! Feel free to head over to the [Issues page](https://github.com/ahinchman1/TornadoFX-Suite/issues) to see what's going on.
 
+## Data Science Courses
+
+https://github.com/ahinchman1/Data-Science-Crash-Course
+
 ## Collaboration Standards
 You'll notice some classifications for the way the issues are labeled.  Ideally, every issue should be formatted a certain way. I just made this up. If you guys have something you like better let me know. You'll often see the issues necessary for this project to move forward in the format of 
 
