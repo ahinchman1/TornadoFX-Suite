@@ -94,12 +94,31 @@ class FXTestBuilders : Controller() {
                 "}\n\n"
     }
 
-    private fun buildTextFieldTest(): String {
+    private fun buildButtonTest(): String {
         return ""
     }
 
-    private fun buildButtonTest(): String {
-        return ""
+    /**
+     * Stage 1: If there's an argument in the textfield, we may assume that it may be filled
+     * on population. Otherwise, we check if there is nothing in it.
+     *
+     * Further considerations:  Implement model checks. Will need to provide support for models
+     */
+    private fun buildTextFieldTest(node: UINode): String {
+        return if (node.nodeTree.has("args")) {
+            """
+
+                Assert.assertNotNull(${node.uiNode}Node.text)
+                Assert.assertTrue(!${node.uiNode}Node.isEmpty())
+
+            """.trimIndent()
+        } else {
+            """
+
+                Assert.assertTrue(${node.uiNode}Node.isEmpty())
+
+            """.trimIndent()
+        }
     }
 
     private fun buildToggleButtonTest(): String {
