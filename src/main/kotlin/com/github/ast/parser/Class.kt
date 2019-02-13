@@ -103,67 +103,60 @@ class Digraph {
 
     fun getChildren(node: UINode): HashSet<UINode> = viewNodes[node] ?: HashSet()
 
-    // use bfs for nodes since trees are probably wider than they are deep
-    fun breadthFirstSearch(source: UINode, destination: UINode): Boolean {
+    // it actually needs be looking by deepness
+    fun depthFirstSearch(source: UINode, destination: UINode): Array<UINode> {
         if (!viewNodes.containsKey(source) || !viewNodes.contains(destination)) {
-            return false
+            return emptyArray()
         }
-        val queue = LinkedList<UINode>()
+        val stack = Stack<UINode>()
         println("EXECUTING SEARCH")
-        queue.addLast(source)
-        println(queue.toString())
-        return breadthFirstSearch(queue, destination)
+        stack.push(source)
+        return depthFirstSearch(stack, destination)
     }
 
-    /*private fun breadthFirstSearchCorrect(source: UINode, destination: UINode): Boolean {
-        if (viewNodes.containsKey(destination)) {
-            val visited = HashMap<UINode, VisitStatus>()
-            val path = LinkedList<UINode>() // path source
-            val queue = LinkedList<UINode>() // to trace through
-
-            // mark current node as visited and enqueue it
-            visited[source] = VisitStatus.VISITING
-            path.add(source)
-
-            var current = source
-            if (current == destination) return true
-
-
-            viewNodes[current]?.iterator()?.forEach {childNodes ->
-
-            }
-        }
-
-    }*/
-
-    private fun breadthFirstSearch(
-            queue: LinkedList<UINode>,
-            destination: UINode
-    ): Boolean {
+    private fun depthFirstSearch(stack: Stack<UINode>, destination: UINode): Array<UINode> {
         val visited = HashMap<UINode, VisitStatus>()
-        while (queue.isNotEmpty()) {
-            val current = queue.remove()
+        val path = LinkedList<UINode>()
+
+        while(stack.isNotEmpty()) {
+            val current = stack.pop()
+            path.add(current)
 
             visited[current] = VisitStatus.VISITING
-            if (current == destination) return true
+            if (current == destination) return getDirectPath(destination.level, path)
 
-            viewNodes[current]?.iterator()?.forEach { neighbor ->
-                if (visited.containsKey(neighbor)) {
-                    if (visited[neighbor] == VisitStatus.UNVISITED) {
-                        println(neighbor.uiNode)
-                        queue.addLast(neighbor)
-                        println("Adding ${neighbor.uiNode}")
-                        println(queue.toString())
+            viewNodes[current]?.iterator()?.forEach { child ->
+                if (visited.containsKey(child)) {
+                    if (visited[child] == VisitStatus.UNVISITED) {
+                        stack.push(child)
                     }
                 } else {
-                    queue.addLast(neighbor)
-                    println("Adding ${neighbor.uiNode}")
-                    println(queue.toString())
+                    stack.push(child)
                 }
             }
             visited[current] = VisitStatus.VISITED
         }
-        return false
+
+        return emptyArray()
+    }
+
+    /**
+     * Iterate through the linked list and insert the latest node level into a
+     * fixed size array (since we know what level we're looking for).
+     *
+     * If the node level in the trace is greater than the destination
+     * don't worry about it
+     **/
+    private fun getDirectPath(nodeLevel: Int, trace: Queue<UINode>): Array<UINode> {
+        val nodePath = Array(nodeLevel + 1) {  UINode("", 0, JsonObject(), ArrayList()) }
+
+        trace.iterator().forEach { node ->
+            if (node.level <= nodeLevel) {
+                nodePath[node.level] =  node
+            }
+        }
+
+        return nodePath
     }
 
     fun getElementByIndex(index: Int): UINode = (viewNodes.keys).toTypedArray()[index]

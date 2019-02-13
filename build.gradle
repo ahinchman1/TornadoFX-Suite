@@ -44,6 +44,8 @@ dependencies {
     compile "org.testfx:testfx-core:4.0.13-alpha"
     compile "org.testfx:testfx-junit:4.0.13-alpha"
     compile "io.github.microutils:kotlin-logging:1.4.4"
+    
+    
     compile group: 'com.github.cretz.kastree', name: 'kastree-ast-common', version: '0.3.0'
     compile group: 'com.github.cretz.kastree', name: 'kastree-ast-jvm', version: '0.3.0'
     compile group: 'com.github.cretz.kastree', name: 'kastree-ast-psi', version: '0.3.0'
