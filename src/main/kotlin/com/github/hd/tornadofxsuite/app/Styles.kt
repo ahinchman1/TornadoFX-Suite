@@ -9,7 +9,6 @@ class Styles : Stylesheet() {
     companion object {
         val main by cssclass()
         val top by cssclass()
-        val translucent by cssclass()
     }
 
     init {
@@ -24,12 +23,14 @@ class Styles : Stylesheet() {
         }
 
         button {
-            backgroundColor += c("#DD7549")
             padding = box(10.px)
             alignment = Pos.CENTER
+            backgroundColor += c("#DD7549")
+            fontWeight = FontWeight.EXTRA_BOLD
 
             and (hover) {
-                backgroundColor += c("#B25E3A")
+                backgroundColor += c("#A05434")
+                textFill = Color.WHITE
             }
             fontWeight = FontWeight.EXTRA_BOLD
         }
@@ -51,5 +52,26 @@ class Styles : Stylesheet() {
             backgroundColor += c("#39393A")
             fitToWidth = true
         }
+
+        tabPane {
+            tabHeaderBackground {
+                opacity = 0.0
+            }
+            tabContentArea {
+                borderColor += box(c("#DD7549"))
+                borderWidth += box(10.px)
+            }
+        }
+
+        tab {
+            backgroundColor += c("#87462B")
+            fontWeight = FontWeight.EXTRA_BOLD
+            and (selected) {
+                backgroundColor += c("#DD7549")
+                textFill = Color.WHITE
+                borderColor += box(c("#DD7549"))
+            }
+        }
+
     }
 }

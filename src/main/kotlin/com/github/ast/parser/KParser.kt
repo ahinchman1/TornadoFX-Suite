@@ -32,6 +32,8 @@ class KParser: Controller() {
         val classProperties = ArrayList<Property>()
         val classMethods = ArrayList<Method>()
 
+        gson.toJsonTree(file).asJsonObject
+
         // Save for all files
         (file.decls[0] as Node.Decl.Structured).members.forEach {
             when (it) {
@@ -48,33 +50,17 @@ class KParser: Controller() {
         val methodStatements = ArrayList<String>()
         val methodContent = methodJson.body()
 
-        when {
-            // regular block function
-            methodContent.has("block") -> {
-                val methodStmts = methodJson.body().block().stmts()
-                if (methodStmts.size() > 0) {
-                    methodStmts.forEach { statement ->
-                        val stmt = statement.asJsonObject
-                        when {
-                            stmt.has("expr") ->
-                                methodStatements.add(breakdownExpr(stmt.expr(), ""))
-                            stmt.has("decl") ->
-                                methodStatements.add(breakdownDecl(stmt.decl(), ""))
-                            else -> println("stmt has$stmt")
-                        }
-                    }
-                }
-            }
-            // function with reflective method calls
-            methodContent.has("expr") -> methodStatements.add(breakdownExpr(methodJson, ""))
-            // function has a single assignment statement
-            else -> methodStatements.add(breakdownBinaryOperation((methodContent.expr()), ""))
-        }
+        breakdownBody(methodJson.body(), methodStatements)
 
         val parameters = ArrayList<Property>()
         methodJson.params().forEach { parameter ->
             val param = parameter.asJsonObject
-            val paramType = param.type().ref().getType()
+            val paramRef = param.type().ref()
+            val paramType = when {
+                paramRef.has("pieces") -> paramRef.getType()
+                paramRef.has("type") -> paramRef.type().getType()
+                else -> TODO()
+            }
             parameters.add(Property("val", param.name(), paramType))
         }
 
@@ -92,7 +78,41 @@ class KParser: Controller() {
                 viewNodesAffected = ArrayList()))
     }
 
+
+    private fun breakdownStmts(stmts: JsonArray, methodStatements: ArrayList<String>?) {
+        stmts.forEach { statement ->
+            val stmt = statement.asJsonObject
+            when {
+                stmt.has("expr") -> methodStatements?.add(breakdownExpr(stmt.expr(), ""))
+                stmt.has("decl") -> methodStatements?.add(breakdownDecl(stmt.decl(), ""))
+                else ->  println("stmt has$stmt")
+            }
+        }
+    }
+
+    private fun breakdownBody(body: JsonObject, methodStatements: ArrayList<String>) {
+        when {
+            // regular block function
+            body.has("block") -> breakdownStmts(body.block().stmts(), methodStatements)
+            // function with reflective method calls
+            body.has("expr") -> methodStatements.add(breakdownExpr(body.expr(), ""))
+            // function has a single assignment statement
+            else -> methodStatements.add(breakdownBinaryOperation((body.expr()), ""))
+        }
+    }
+
     private fun breakdownDecl(decl: JsonObject, buildStmt: String): String {
+        return when {
+            decl.has("expr") -> breakdownDeclProperty(decl, buildStmt)
+            decl.has("body") -> {
+                breakdownBody(decl.body(), arrayListOf())
+                "method body here: $decl"
+            }
+            else -> "MISSING DECL $decl"
+        }
+    }
+
+    private fun breakdownDeclProperty(decl: JsonObject, buildStmt: String): String {
         val isolated = decl.vars().getObject(0)
         val isolatedName = isolated.name()
         val property = when {
@@ -113,11 +133,13 @@ class KParser: Controller() {
                     getPrimitiveType(decl.expr()))
             else -> TODO()
         }
-        val declaration = "$buildStmt${property.valOrVar} $isolatedName: ${property.propertyType} ="
+        val declaration = "$buildStmt${property.valOrVar} $isolatedName: ${property.propertyType}"
         return "$declaration = ${breakdownExpr(decl, buildStmt)}"
     }
 
-    private fun breakdownExpr(expr: JsonObject, buildStmt: String): String {
+    private fun breakdownExpr(expr: JsonObject,
+                              buildStmt: String,
+                              methodStatements: ArrayList<String>? = arrayListOf()): String {
         when {
             expr.has("lhs") &&
                     expr.has("oper") &&
@@ -128,6 +150,7 @@ class KParser: Controller() {
             expr.has("elems") -> getElems(expr.elems(), buildStmt)
             expr.has("params") -> getParams(expr.params(), buildStmt)
             expr.has("value") -> buildStmt + getValue(expr)
+            expr.has("block") -> breakdownStmts(expr.block().stmts(), methodStatements)
             expr.size() == 0 -> {}
             else -> println(expr)
         }
@@ -191,6 +214,7 @@ class KParser: Controller() {
         }
     }
 
+    // TODO rewrite to accept 2 types for primitive
     private fun getPrimitiveType(value: JsonObject): String {
         return when (value.get("form").asJsonPrimitive.toString()) {
             "\"BOOLEAN\"" -> "Boolean"
@@ -204,22 +228,37 @@ class KParser: Controller() {
         }
     }
 
+    private fun getPrimitiveType(form: String): String {
+        return when (form) {
+            "\"BOOLEAN\"" -> "Boolean"
+            "\"BYTE\"" -> "Byte"
+            "\"CHAR\"" -> "Char"
+            "\"DOUBLE\"" -> "Double"
+            "\"FLOAT\"" -> "Float"
+            "\"INT\"" -> "Int"
+            "\"NULL\"" -> "null"
+            else -> "Unrecognized value type" // object type probs
+        }
+    }
+
+    private fun getToken(token: String): String {
+        return when (token) {
+            "DOT" -> "."
+            "ASSN" -> " = "
+            "NEQ" -> " != "
+            "NEG" -> "-"
+            "EQ" -> " == "
+            "RANGE" -> " .. "
+            "AS" -> " as "
+            else -> token
+        }
+    }
+
     private fun breakdownBinaryOperation(expr: JsonObject, buildStmt: String): String {
         val oper = expr.oper()
         val operator = when {
             oper.has("str")  -> oper.str()
-            oper.has("token") -> {
-                when (oper.token()) {
-                    "DOT" -> "."
-                    "ASSN" -> " = "
-                    "NEQ" -> " != "
-                    "EQ" -> " == "
-                    "RANGE" -> " .. "
-                    "AS" -> " as "
-                    else -> oper.token()
-                }
-
-            }
+            oper.has("token") -> getToken(oper.token())
             else -> "{$oper}"
         }
 
@@ -266,8 +305,14 @@ class KParser: Controller() {
         }
     }
 
-    private fun saveViewImport(path: String): String =
+    private fun saveViewImport(path: String): String {
+        return if (path.contains("kotlin/")) {
             path.split("kotlin")[1].replace("/", ".").substring(1)
+        } else {
+            path.split("java")[1].replace("/", ".").substring(1)
+        }
+    }
+
 
     /**
      * Observable class properties ought to be refactored to use the recursive breakdown
@@ -317,33 +362,42 @@ class KParser: Controller() {
     private fun getProperty(node: JsonObject, isolated: JsonObject, isolatedName: String): Property {
 
         val type = node.expr().expr().name()
+        var isolatedType = ""
+        when {
+            // primitive property
+            node.expr().expr().has("form") -> {
+                isolatedType = getPrimitiveType(node.expr().expr().form())
+            }
+            // collection property
+            node.expr().expr().has("name") -> {
+                isolatedType = when(type) {
+                    "inject" -> isolated.type().ref().pieces().getObject(0).name()
+                    "listOf" -> {
+                        val listOfMemberType = node.expr().typeArgs()
 
-        val isolatedType = when(type) {
-            "inject" -> isolated.type().ref().pieces().getObject(0).name()
-            "listOf" -> {
-                val listOfMemberType = node.expr().typeArgs()
+                        if (listOfMemberType.size() > 0) {
+                            "$type( " + listOfMemberType.getObject(0).ref().getType() + ")"
+                        } else {
+                            type
+                        }
+                    }
+                    "HashMap" -> "$type<" +
+                            node.expr().typeArgs().getObject(0).ref().getType() + ","+
+                            node.expr().typeArgs().getObject(1).ref().getType() + ">"
+                    "ArrayList" -> "$type<" +
+                            node.expr().typeArgs().getObject(0).ref().getType() + ">"
+                    "mutableListOf" -> {
+                        val listOfMemberType = node.expr().typeArgs()
 
-                if (listOfMemberType.size() > 0) {
-                    "$type( " + listOfMemberType.getObject(0).ref().getType() + ")"
-                } else {
-                    type
+                        if (listOfMemberType.size() > 0) {
+                            "$type( " + listOfMemberType.getObject(0).ref().getType() + ")"
+                        } else {
+                            type
+                        }
+                    }
+                    else -> type
                 }
             }
-            "HashMap" -> "$type<" +
-                    node.expr().typeArgs().getObject(0).ref().getType() + ","+
-                    node.expr().typeArgs().getObject(1).ref().getType() + ">"
-            "ArrayList" -> "$type<" +
-                    node.expr().typeArgs().getObject(0).ref().getType() + ">"
-            "mutableListOf" -> {
-                val listOfMemberType = node.expr().typeArgs()
-
-                if (listOfMemberType.size() > 0) {
-                    "$type( " + listOfMemberType.getObject(0).ref().getType() + ")"
-                } else {
-                    type
-                }
-            }
-            else -> type
         }
 
         return Property(valOrVar(node), isolatedName, isolatedType)
@@ -477,4 +531,6 @@ class KParser: Controller() {
     private fun JsonObject.str(): String = this.get("str").asString
 
     private fun JsonObject.name(): String = this.get("name").asString
+
+    private fun JsonObject.form(): String = this.get("form").asString
 }

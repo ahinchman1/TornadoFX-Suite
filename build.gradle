@@ -44,12 +44,9 @@ dependencies {
     compile "org.testfx:testfx-core:4.0.13-alpha"
     compile "org.testfx:testfx-junit:4.0.13-alpha"
     compile "io.github.microutils:kotlin-logging:1.4.4"
-    
-    
-    compile group: 'com.github.cretz.kastree', name: 'kastree-ast-common', version: '0.3.0'
-    compile group: 'com.github.cretz.kastree', name: 'kastree-ast-jvm', version: '0.3.0'
-    compile group: 'com.github.cretz.kastree', name: 'kastree-ast-psi', version: '0.3.0'
-
+    compile "com.github.cretz.kastree:kastree-ast-common:0.3.0"
+    compile "com.github.cretz.kastree:kastree-ast-jvm:0.3.0"
+    compile "com.github.cretz.kastree:kastree-ast-psi:0.3.0"
 
     testCompile "org.junit.jupiter:junit-jupiter-api:$junit_version"
     testRuntime "org.junit.jupiter:junit-jupiter-engine:$junit_version"
