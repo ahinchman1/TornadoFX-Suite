@@ -20,6 +20,9 @@ class FXTestBuilders : Controller() {
 
     private val controlHashMap = hashMapOf<UINode, String>()
 
+    // supports one set of forms at a time per view for now
+    private var form: UINode? = null
+
     fun generateTests(
             viewImports: HashMap<String, String>,
             mappedViewNodes: HashMap<String, Digraph>,
@@ -60,6 +63,23 @@ class FXTestBuilders : Controller() {
     }
 
     /**
+     * Generates random ids for detected UI nodes to attach to test application view/fragment
+     * at runtime.
+     */
+    private fun createControls(classInfo: TestClassInfo): String {
+        var controlList = "\tprivate val listOfControls = listOf(\n"
+
+        classInfo.detectedUIControls.forEach {
+            val id = randomString()
+            controlList += "\t\tControl(" + controlDictionary[it.uiNode] +
+                    "::class, " + id + ")\n"
+            controlHashMap[it] = id
+        }
+
+        return "$controlList\n\t)"
+    }
+
+    /**
      * Writes the test file.
      * TODO - save file into the proper project itself, create a method for creating a test folder?
      */
@@ -97,16 +117,28 @@ class FXTestBuilders : Controller() {
                 controls +
                 dynamicallyAddIds()
 
-        // Step 3: According to a dictionary of tests, write combinations
-        classInfo.detectedUIControls.forEach {control ->
-            file += testStub(classInfo.className, classInfo.mappedViewNodes, control)
+        // Step 3. separate out controls by groupings i.e. forms
+        if (form != null) {
+            // supports one set of forms at a time per view for now
+            val formControlMap = hashMapOf<UINode, String>()
+
+            controlHashMap.forEach { uiNode, id ->
+                isNodeInForm(classInfo.mappedViewNodes, formControlMap, uiNode, id, form as UINode)
+            }
+
+            // Step 4: According to a dictionaries of tests, write necessary combinations
+            buildFormTests(formControlMap)
+        }
+
+        // Step 4: According to a dictionaries of tests, write necessary combinations
+        controlHashMap.forEach { uiNode, id ->
+            file += testIndividualNodeStub(uiNode, id)
         }
 
         file += "}"
 
         File("${classInfo.className}Test.kt")
                 .printWriter().use {out -> out.println(file)}
-
     }
 
     /**
@@ -118,62 +150,52 @@ class FXTestBuilders : Controller() {
         var setup = ""
 
         controlHashMap.forEach {
-            val formVar = when (it.key.uiNode) {
-                "form" -> "lateinit var ${it.value}Form: Form\n"
-                "button" -> "lateinit var ${it.value}Button: Button\n"
-                "textfield" -> "lateinit var ${it.value}TextField: TextField\n"
-                else -> ""
+            if (it.key.uiNode == "form") {
+                form = it.key
             }
+            val formVar = "\tlateinit var ${it.value}${controlDictionary[it.value]}: ${controlDictionary[it.value]}\n"
             setup += formVar
         }
 
         setup +=  """
 
-            @Before
-            fun setup() {
-                primaryStage = FxToolkit.registerPrimaryStage()
-                val fragment = find<Editor>(CatScheduleScope())
+                @Before
+                fun setup() {
+                    primaryStage = FxToolkit.registerPrimaryStage()
+                    val fragment = find<Editor>(CatScheduleScope())
 
-                view.root.add(fragment.root)
+                    view.root.add(fragment.root)
 
-                addAllIdsToDescendents(view.root)
+                    addAllIdsToDescendents(view.root)
 
-                interact {
-                    primaryStage.scene = Scene(view.root)
-                    primaryStage.show()
-                    primaryStage.toFront()
+                    interact {
+                        primaryStage.scene = Scene(view.root)
+                        primaryStage.show()
+                        primaryStage.toFront()
+
         """.trimIndent()
 
         controlHashMap.forEach {
             val lookup = when (it.key.uiNode) {
-                "form" -> "${it.value}Form = form(view.root).lookup(#${it.value}).query()\n"
-                "button" -> "${it.value}Button = form(view.root).lookup(#${it.value}).query()\n"
-                "textfield" -> "${it.value}TextField = form(view.root).lookup(#${it.value}).query()\n"
+                "form" -> "\t\t\t\t${it.value}Form = from(view.root).lookup(#${it.value}).query()\n"
+                "button" -> "\t\t\t\t${it.value}Button = from(view.root).lookup(#${it.value}).query()\n"
+                "textfield" -> "\t\t\t\t${it.value}TextField = from(view.root).lookup(#${it.value}).query()\n"
                 else -> ""
             }
             setup += lookup
         }
 
-        setup += "\t\t}\n\t}\n\n"
+        setup += "\t\t\t}\n\t\t}\n"
 
-        return setup
-    }
+        setup += "\t\tprivate val listOfControls = listOf("
 
-    /**
-     * Generates random ids for detected UI nodes to attach to test application view/fragment
-     * at runtime.
-     */
-    private fun createControls(classInfo: TestClassInfo): String {
-        var controlList = "\tprivate val listOfControls = listOf(\n"
-
-        classInfo.detectedUIControls.forEach {
-            val id = randomString()
-            controlList += "\t\tControl(" + controlDictionary[it.uiNode] +
-                    "::class, " + id + ")\n"
-            controlHashMap[it] = id
+        setup += controlHashMap.forEach {
+            "\n\t\t\tControl(${it.key}::class, \"${it.value}\"),"
         }
 
-        return "$controlList\n\t)"
+        setup = setup.substring(0, setup.length - 1) + "\n\t\t)\n"
+
+        return setup
     }
 
     /**
@@ -181,52 +203,48 @@ class FXTestBuilders : Controller() {
      */
     private fun dynamicallyAddIds(): String {
         return """
-            private fun addAllIdsToDescendents(parent: Parent) {
-                for (node in parent.childrenUnmodifiable) {
-                    checkToAttachNodeId(node)
-                    if (node is Parent) {
-                        addAllIdsToDescendents(node)
+                private fun addAllIdsToDescendents(parent: Parent) {
+                    for (node in parent.childrenUnmodifiable) {
+                        checkToAttachNodeId(node)
+                        if (node is Parent) {
+                            addAllIdsToDescendents(node)
+                        }
                     }
                 }
-            }
 
-            private fun checkToAttachNodeId(node: Node) {
-                listOfControls.forEach { control ->
-                    if (control.type.isInstance(node) &&
-                            !control.isAssigned &&
-                            node.id == null) {
-                        node.id = control.id
-                        control.isAssigned
+                private fun checkToAttachNodeId(node: Node) {
+                    listOfControls.forEach { control ->
+                        if (control.type.isInstance(node) &&
+                                !control.isAssigned &&
+                                node.id == null) {
+                            node.id = control.id
+                            control.isAssigned
+                        }
                     }
                 }
-            }
         """.trimIndent()
     }
 
     /**
-     * Test stubs written for every control detected. TestFX matchers and unit testing here.
+     * If a node is in a form, node testing may interact together in a particular way.
+     * Pull out of control HashMap into a new HashMap grouping for testing
      */
-    private fun testStub(view: String, digraph: Digraph, node: UINode): String {
-        val nodePath = digraph.depthFirstSearch(digraph.root, node)
-        val performAndExpectation = performAction(node)
+    private fun isNodeInForm(digraph: Digraph,
+                             formControlMap: HashMap<UINode, String>,
+                             nodeControl: UINode,
+                             nodeId: String,
+                             form: UINode) {
+        val nodePath = digraph.depthFirstSearch(form, nodeControl)
 
-        // TODO - add scopes to class breakdown for fragments. Need scope support.
-        // TODO - write expected behavior for testing forms, buttons, textfields
-        // TODO - take out reference node with the id that the node will actually use
-
-        return """
-
-                @Test
-                fun ${node.uiNode}ClickTest() {
-                    val ${node.uiNode}Node = ${referenceNode(nodePath)}
-
-                    ${performAndExpectation.first}
-                    ${performAndExpectation.second}
-                }
-        """.trimIndent()
+        if (nodePath.isNotEmpty()) {
+            controlHashMap.remove(nodeControl)
+            formControlMap[nodeControl] = nodeId
+        }
     }
 
-
+    /**
+     * Referencing a node path may be something like root.form.fieldset.textfield and so on
+     */
     private fun referenceNode(nodePath: Array<UINode>): String {
         var nodeReference = ""
 
@@ -239,42 +257,101 @@ class FXTestBuilders : Controller() {
         return nodeReference
     }
 
-    private fun performAction(node: UINode): Pair<String, String> {
-        return when (node.uiNode) {
-            "form" -> Pair("", "")
-            "textfield" -> Pair(buildTextFieldTest(node), "")
-            "button" -> Pair("", "")
-            else -> TODO()
+    /**
+     * Test individual nodes but also combinations of those interactions
+     */
+    private fun buildFormTests(formControls: HashMap<UINode, String>): String {
+        var formTests = ""
+        var hasButton = false
+
+        formControls.forEach { uiNode, id ->
+            if (uiNode.uiNode != "form") {
+                formTests += testIndividualNodeStub(uiNode, id)
+            }
+            if (uiNode.uiNode == "button") hasButton = true
         }
-    }
 
-    private fun buildFormTest(): String {
+        // TODO in model support, include permutations
+        if (hasButton) {
+            // input something in all textfields and clicks a button
+            formTests += "\t@Test fun testInputAll() {\n"
+            formControls.forEach { node, nodeId ->
+                formTests += when (node.uiNode) {
+                    "textfield" -> "\t\tclickOn($nodeId${controlDictionary[node.uiNode]}).write(\"Something\")\n"
+                    "button" -> "\t\tclickOn($nodeId${controlDictionary[node.uiNode]})\n"
+                    else -> ""
+                }
+            }
+            formTests += "\t}\n\n"
+
+            // input nothing and click button
+            formTests += "\t@Test fun testEmptyForm() {\n"
+            formControls.forEach { node, nodeId ->
+                formTests += when (node.uiNode) {
+                    "textfield" -> "\t\tclickOn($nodeId${controlDictionary[node.uiNode]}).write(\"\")\n"
+                    "button" -> "\t\tclickOn($nodeId${controlDictionary[node.uiNode]})\n"
+                    else -> ""
+                }
+            }
+            formTests += "\t}\n\n"
+        }
+
         return ""
     }
 
-    private fun buildButtonTest(): String {
-        return ""
+    /**
+     * Test stubs written for every control detected. TestFX matchers and unit testing here.
+     */
+    private fun testIndividualNodeStub(node: UINode,
+                                       nodeId: String): String {
+        val performAnActionAndCheckExpectation = performIndividualAction(node, nodeId)
+
+        // TODO - add scopes to class breakdown for fragments. Need scope support.
+
+        return """
+
+                @Test fun test$nodeId${node.uiNode}() {
+                    $performAnActionAndCheckExpectation
+                }
+        """.trimIndent()
+    }
+
+    private fun performIndividualAction(node: UINode,
+                                        nodeId: String): String {
+        return when (node.uiNode) {
+            "textfield" -> buildTextFieldTest(node, nodeId)
+            "button" -> buildButtonTest(node, nodeId)
+            else -> ""
+        }
     }
 
     /**
      * Stage 1: If there's an argument in the textfield, we may assume that it may be filled
      * on population. Otherwise, we check if there is nothing in it.
      *
+     * Stage 2: Input edge cases like numbers, model support validation
+     *
      * Further considerations:  Implement model checks. Will need to provide support for models
      */
-    private fun buildTextFieldTest(node: UINode): String {
+    private fun buildTextFieldTest(node: UINode,
+                                   nodeId: String): String {
+
         return if (node.nodeTree.has("args")) {
             // this may be potentially flappy if a model parameter returns an empty
             """
+                        assertNotNull($nodeId${node.uiNode}.text)
+                        assertTrue(!$nodeId${node.uiNode}.text.isNullOrEmpty())
 
-                Assert.assertNotNull(${node.uiNode}Node.text)
-                Assert.assertTrue(!${node.uiNode}Node.isEmpty())
+                        clickOn($nodeId${controlDictionary[node.uiNode]}).write("Something")
+                        assertEquals("Something", $nodeId${controlDictionary[node.uiNode]}.text)
 
             """.trimIndent()
         } else {
             """
+                        assertTrue($nodeId${node.uiNode}.text.isNullOrEmpty())
 
-                Assert.assertTrue(${node.uiNode}Node.isEmpty())
+                        clickOn($nodeId${controlDictionary[node.uiNode]}).write("Something")
+                        assertEquals("Something", $nodeId${controlDictionary[node.uiNode]}.text)
 
             """.trimIndent()
         }
@@ -283,12 +360,15 @@ class FXTestBuilders : Controller() {
     /**
      * Stage 1: Click button.
      *
+     * Stage 2: Determine whether there is enabling for the button, track action of button
+     *
      * Further considerations: Check the associated action and trace through to see what other
      * nodes may be affected
      */
-    private fun buildButtonTest(node: UINode): String {
+    private fun buildButtonTest(node: UINode,
+                                nodeId: String): String {
         return """
-            Assert
+            clickOn($nodeId${controlDictionary[node.uiNode]})
         """.trimIndent()
     }
 

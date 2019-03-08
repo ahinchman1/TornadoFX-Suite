@@ -86,7 +86,7 @@ class Dialog : Fragment() {
                 close()
             }
             vboxConstraints {
-                marginLeft = 280.0
+                marginLeft = 240.0
                 marginBottom = 20.0
             }
         }

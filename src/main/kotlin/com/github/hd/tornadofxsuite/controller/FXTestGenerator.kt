@@ -11,23 +11,11 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import kotlin.random.Random
 
 class FXTestGenerator: Controller() {
     val kotlinFiles = ArrayList<File>()
     private val view: MainView by inject()
     private val scanner: KParser by inject()
-
-    // TODO separate UI from AST parsing
-    fun fetchAsync(file: File) {
-        runAsync {
-            walk(file.absolutePath)
-        } ui {
-            fire(FetchCompletedEvent())
-        } fail {
-            println( "Cannot read file: $file")
-        }
-    }
 
      fun walk(path: String) {
         Files.walk(Paths.get(path)).use { allFiles ->
