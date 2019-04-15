@@ -26,6 +26,8 @@ enum class INPUTS {
     TextField, Button, Form
 }
 
+data class TornadoFXView(var view: String? = "", var type: String? = "", var scope: String? = "")
+
 class TornadoFXInputs(viewClass: String, inputs: ArrayList<String>) {
     val viewClassProperty = SimpleStringProperty(this, "", viewClass)
     var viewClass by viewClassProperty

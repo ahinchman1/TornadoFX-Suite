@@ -2,6 +2,7 @@ package com.github.hd.tornadofxsuite.controller
 
 import com.github.ast.parser.Digraph
 import com.github.ast.parser.TestClassInfo
+import com.github.ast.parser.TornadoFXView
 import com.github.ast.parser.UINode
 import tornadofx.*
 import java.io.File
@@ -26,11 +27,11 @@ class FXTestBuilders : Controller() {
     fun generateTests(
             viewImports: HashMap<String, String>,
             mappedViewNodes: HashMap<String, Digraph>,
-            detectedUIControls: HashMap<String, ArrayList<UINode>>
+            detectedUIControls: HashMap<String, ArrayList<UINode>>,
+            tfxViews: HashMap<String, TornadoFXView>
     ) {
-
         // Step 1: Breakup classes
-        val classes = breakupClasses(viewImports, mappedViewNodes, detectedUIControls)
+        val classes = breakupClasses(viewImports, mappedViewNodes, detectedUIControls, tfxViews)
 
         // Step 2: Write each file with their imports
         for (item in classes) {
@@ -44,18 +45,20 @@ class FXTestBuilders : Controller() {
     private fun breakupClasses(
             viewImports: HashMap<String, String>,
             mappedViewNodes: HashMap<String, Digraph>,
-            detectedUIControls: HashMap<String, ArrayList<UINode>>
+            detectedUIControls: HashMap<String, ArrayList<UINode>>,
+            tfxViews: HashMap<String, TornadoFXView>
     ): ArrayList<TestClassInfo> {
         val classes = ArrayList<TestClassInfo>()
 
-        viewImports.forEach {className, item ->
+        viewImports.forEach { (className, item) ->
             // check that all items are there
             if (detectedUIControls.containsKey(className) &&
                     mappedViewNodes.containsKey(className)) {
                 val uiControls = detectedUIControls[className] ?: ArrayList()
                 val mappedNodes = mappedViewNodes[className] ?: Digraph()
+                val tfxView = tfxViews[className] ?: TornadoFXView()
 
-                classes.add(TestClassInfo(className, item, uiControls, mappedNodes))
+                classes.add(TestClassInfo(className, item, uiControls, mappedNodes, tfxView))
             } else println("Missing info for $className")
         }
 
@@ -112,8 +115,11 @@ class FXTestBuilders : Controller() {
             }
 
             class ${classInfo.className}Test: ApplicationTest {
+                lateinit var primaryStage: Stage
+                val view = TestView()
+                
         """.trimIndent() +
-                setup() +
+                setup(classInfo) +
                 controls +
                 dynamicallyAddIds()
 
@@ -122,7 +128,7 @@ class FXTestBuilders : Controller() {
             // supports one set of forms at a time per view for now
             val formControlMap = hashMapOf<UINode, String>()
 
-            controlHashMap.forEach { uiNode, id ->
+            controlHashMap.forEach { (uiNode, id) ->
                 isNodeInForm(classInfo.mappedViewNodes, formControlMap, uiNode, id, form as UINode)
             }
 
@@ -131,7 +137,7 @@ class FXTestBuilders : Controller() {
         }
 
         // Step 4: According to a dictionaries of tests, write necessary combinations
-        controlHashMap.forEach { uiNode, id ->
+        controlHashMap.forEach { (uiNode, id) ->
             file += testIndividualNodeStub(uiNode, id)
         }
 
@@ -145,7 +151,7 @@ class FXTestBuilders : Controller() {
      * The @Before test method of the TestFX application.  Saves desired UI controls as
      * member variables to use throughout the rest of the testing class
      */
-    private fun setup(): String {
+    private fun setup(classInfo: TestClassInfo): String {
 
         var setup = ""
 
@@ -162,9 +168,9 @@ class FXTestBuilders : Controller() {
                 @Before
                 fun setup() {
                     primaryStage = FxToolkit.registerPrimaryStage()
-                    val fragment = find<Editor>(CatScheduleScope())
+                    val ${classInfo.className.toLowerCase()}${classInfo.tfxView.type} = find<${classInfo.className}>(${classInfo.tfxView.scope})
 
-                    view.root.add(fragment.root)
+                    view.root.add(${classInfo.className.toLowerCase()}${classInfo.tfxView.type}.root)
 
                     addAllIdsToDescendents(view.root)
 
@@ -264,7 +270,7 @@ class FXTestBuilders : Controller() {
         var formTests = ""
         var hasButton = false
 
-        formControls.forEach { uiNode, id ->
+        formControls.forEach { (uiNode, id) ->
             if (uiNode.uiNode != "form") {
                 formTests += testIndividualNodeStub(uiNode, id)
             }
@@ -275,7 +281,7 @@ class FXTestBuilders : Controller() {
         if (hasButton) {
             // input something in all textfields and clicks a button
             formTests += "\t@Test fun testInputAll() {\n"
-            formControls.forEach { node, nodeId ->
+            formControls.forEach { (node, nodeId) ->
                 formTests += when (node.uiNode) {
                     "textfield" -> "\t\tclickOn($nodeId${controlDictionary[node.uiNode]}).write(\"Something\")\n"
                     "button" -> "\t\tclickOn($nodeId${controlDictionary[node.uiNode]})\n"
@@ -286,7 +292,7 @@ class FXTestBuilders : Controller() {
 
             // input nothing and click button
             formTests += "\t@Test fun testEmptyForm() {\n"
-            formControls.forEach { node, nodeId ->
+            formControls.forEach { (node, nodeId) ->
                 formTests += when (node.uiNode) {
                     "textfield" -> "\t\tclickOn($nodeId${controlDictionary[node.uiNode]}).write(\"\")\n"
                     "button" -> "\t\tclickOn($nodeId${controlDictionary[node.uiNode]})\n"

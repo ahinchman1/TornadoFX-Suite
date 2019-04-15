@@ -56,9 +56,9 @@ class FXTestGenerator: Controller() {
         
         if (scanner.mapClassViewNodes.size > 0) {
             println("DETECTED LAMBDA ELEMENTS IN PROJECT: ")
-            scanner.mapClassViewNodes.forEach { className, digraph ->
+            scanner.mapClassViewNodes.forEach { (className, digraph) ->
                 println(className)
-                digraph.viewNodes.forEach { bucket, children ->
+                digraph.viewNodes.forEach { (bucket, children) ->
                     val nodeLevel = bucket.level
                     var viewNode = "$nodeLevel \t${bucket.uiNode}"
 
@@ -75,20 +75,19 @@ class FXTestGenerator: Controller() {
 
         if (scanner.detectedUIControls.size > 0) {
             println("DERIVING INPUTS: ")
-            scanner.detectedUIControls.forEach {
-                println(it)
-            }
+            scanner.detectedUIControls.forEach(::println)
         }
     }
 
     private fun readFiles(file: File, path: String) {
         val fileText = file.bufferedReader().use(BufferedReader::readText)
+        val console = view.console.items
         if (filterFiles(fileText)) {
-            view.console.items.add(view.consolePath + file.toString())
-            view.console.items.add("READING FILES...")
+            console.add(view.consolePath + file.toString())
+            console.add("READING FILES...")
             kotlinFiles.add(file)
-            view.console.items.add(fileText)
-            view.console.items.add("===================================================================")
+            console.add(fileText)
+            console.add("===================================================================")
             scanner.parseAST(fileText, path)
         }
     }

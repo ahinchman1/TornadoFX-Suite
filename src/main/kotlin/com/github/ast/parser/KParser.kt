@@ -13,11 +13,11 @@ class KParser: Controller() {
     private var independentFunctions = ArrayList<String>()
     var detectedUIControls = HashMap<String, ArrayList<UINode>>()
     var mapClassViewNodes = HashMap<String, Digraph>()
+    var tfxViews = HashMap<String, TornadoFXView>()
     var viewImports = HashMap<String, String>()
     val gson = Gson()
 
     fun parseAST(textFile: String, path: String) {
-        // if (textFile.contains)
         val file = Parser.parseFile(textFile, true)
 
         file.decls.forEach {node ->
@@ -31,18 +31,35 @@ class KParser: Controller() {
     private fun breakDownClass(className: String, file: Node.File, path: String) {
         val classProperties = ArrayList<Property>()
         val classMethods = ArrayList<Method>()
+        val classParents = ArrayList<String>()
+        val currentTFXView = TornadoFXView()
 
         gson.toJsonTree(file).asJsonObject
 
+        val clazz = file.decls[0] as Node.Decl.Structured
+
+        clazz.parents.forEach {
+            val parentClass = gson.toJsonTree(it).asJsonObject.type().getType()
+            classParents.add(parentClass)
+            if (parentClass == "Fragment" || parentClass == "View") {
+                currentTFXView.view = className
+                currentTFXView.type = parentClass
+            }
+        }
+
         // Save for all files
-        (file.decls[0] as Node.Decl.Structured).members.forEach {
+        clazz.members.forEach {
             when (it) {
                 is Node.Decl.Structured -> println("this is probably a companion object")
                 is Node.Decl.Property -> convertToClassProperty(it, classProperties, className, path)
                 is Node.Decl.Func -> breakdownClassMethod(it, classMethods)
             }
         }
-        classes.add(ClassBreakDown(className, classProperties, classMethods))
+
+        if (!currentTFXView.type.isNullOrEmpty()) {
+            tfxViews[className] = currentTFXView
+        }
+        classes.add(ClassBreakDown(className, classParents, classProperties, classMethods))
     }
 
     private fun breakdownClassMethod(method: Node.Decl.Func, classMethods: ArrayList<Method>) {
@@ -168,7 +185,7 @@ class KParser: Controller() {
     private fun getElems(elems: JsonArray, buildStmt: String): String {
         var buildElems = buildStmt
         if (elems.size() > 0) {
-            elems.forEach { it ->
+            elems.forEach {
                 val elem = it.asJsonObject
                 buildElems += when {
                     elem.has("str") -> elem.str()
@@ -281,13 +298,15 @@ class KParser: Controller() {
         val secondBit = "expr=Call(expr=Name(name="
         val string = property.toString()
 
-        property.vars[0]?.name
-
         val node = gson.toJsonTree(property).asJsonObject
 
         if (string.contains(secondBit)) {
             val isolated = node.vars().getObject(0)
             val isolatedName = isolated.name()
+
+            if (isolatedName == "scope") {
+                tfxViews[className]?.scope = node.expr().rhs().ref().getType()
+            }
 
             if (isolatedName == "root") {
                 viewImports[className] = saveViewImport(path)
@@ -371,7 +390,7 @@ class KParser: Controller() {
             // collection property
             node.expr().expr().has("name") -> {
                 isolatedType = when(type) {
-                    "inject" -> isolated.type().ref().pieces().getObject(0).name()
+                    "inject" -> isolated.type().ref().getType()
                     "listOf" -> {
                         val listOfMemberType = node.expr().typeArgs()
 
@@ -440,7 +459,6 @@ class KParser: Controller() {
                 }
             }
 
-
             // TornadoFX specific
             addControls<INPUTS>(graphNode, className)
 
@@ -457,7 +475,7 @@ class KParser: Controller() {
     // using the enum class to check for control values here
     private inline fun <reified T : Enum<T>> addControls(control: UINode,
                                                          className: String) {
-        enumValues<T>().forEach { it ->
+        enumValues<T>().forEach {
             if (control.uiNode.toLowerCase() == (it.name).toLowerCase()) {
                 if (!detectedUIControls.containsKey(className)) {
                     val controlCollection = ArrayList<UINode>()

@@ -4,6 +4,7 @@ import com.google.gson.JsonObject
 import java.util.*
 
 data class ClassBreakDown(val className: String,
+                          val classParent: ArrayList<String>,
                           val classProperties: ArrayList<Property>,
                           val classMethods: ArrayList<Method>)
 
@@ -20,7 +21,8 @@ data class Method(val name: String,
 data class TestClassInfo(val className: String,
                          val viewImport: String,
                          val detectedUIControls: ArrayList<UINode>,
-                         val mappedViewNodes: Digraph)
+                         val mappedViewNodes: Digraph,
+                         val tfxView: TornadoFXView)
 
 
 data class UINode(val uiNode: String,

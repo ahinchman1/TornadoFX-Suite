@@ -76,7 +76,8 @@ class Dialog : Fragment() {
                 testBuilder.generateTests(
                         scanner.viewImports,
                         scanner.mapClassViewNodes,
-                        scanner.detectedUIControls
+                        scanner.detectedUIControls,
+                        scanner.tfxViews
                 )
                 view.overlay.apply {
                     style {
