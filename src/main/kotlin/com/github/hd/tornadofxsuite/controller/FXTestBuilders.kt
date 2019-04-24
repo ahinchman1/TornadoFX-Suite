@@ -15,14 +15,14 @@ class FXTestBuilders : Controller() {
     // TODO - may need to refactor with the enums definitions in TornadoFX.kt, enums are redundant
     private val controlDictionary = hashMapOf(
             "form" to "Form",
-            "textfield" to "Textfield",
+            "textfield" to "TextField",
             "button" to "Button"
     )
 
     private val controlHashMap = hashMapOf<UINode, String>()
 
     // supports one set of forms at a time per view for now
-    private var form: UINode? = null
+    private var forms = hashMapOf<UINode, String>()
 
     fun generateTests(
             viewImports: HashMap<String, String>,
@@ -74,8 +74,7 @@ class FXTestBuilders : Controller() {
 
         classInfo.detectedUIControls.forEach {
             val id = randomString()
-            controlList += "\t\tControl(" + controlDictionary[it.uiNode] +
-                    "::class, " + id + ")\n"
+            controlList += "\t\tControl(${controlDictionary[it.uiNode]}::class, $id)\n"
             controlHashMap[it] = id
         }
 
@@ -124,16 +123,21 @@ class FXTestBuilders : Controller() {
                 dynamicallyAddIds()
 
         // Step 3. separate out controls by groupings i.e. forms
-        if (form != null) {
-            // supports one set of forms at a time per view for now
-            val formControlMap = hashMapOf<UINode, String>()
+        if (forms.isNotEmpty()) {
 
-            controlHashMap.forEach { (uiNode, id) ->
-                isNodeInForm(classInfo.mappedViewNodes, formControlMap, uiNode, id, form as UINode)
+            forms.forEach { (node, _) ->
+                val formControlMap = hashMapOf<UINode, String>()
+
+                // TODO check if this actually works
+                // Move field set controls out of controlHashMap
+                classInfo.getNodeChildren(node).forEach { field ->
+                    formControlMap[field] = controlHashMap[field] ?: ""
+                    controlHashMap.remove(field)
+                }
+
+                // Step 4: According to a dictionaries of tests, write necessary combinations
+                buildFormTests(formControlMap)
             }
-
-            // Step 4: According to a dictionaries of tests, write necessary combinations
-            buildFormTests(formControlMap)
         }
 
         // Step 4: According to a dictionaries of tests, write necessary combinations
@@ -155,11 +159,13 @@ class FXTestBuilders : Controller() {
 
         var setup = ""
 
-        controlHashMap.forEach {
-            if (it.key.uiNode == "form") {
-                form = it.key
+        controlHashMap.forEach { (node, id) ->
+            if (node.uiNode == "form") {
+                forms[node] = id
+                controlHashMap.remove(node)
             }
-            val formVar = "\tlateinit var ${it.value}${controlDictionary[it.value]}: ${controlDictionary[it.value]}\n"
+            val nodeType = controlDictionary[node.uiNode]
+            val formVar = "\tlateinit var $id$nodeType: $nodeType\n"
             setup += formVar
         }
 
@@ -181,24 +187,19 @@ class FXTestBuilders : Controller() {
 
         """.trimIndent()
 
-        controlHashMap.forEach {
-            val lookup = when (it.key.uiNode) {
-                "form" -> "\t\t\t\t${it.value}Form = from(view.root).lookup(#${it.value}).query()\n"
-                "button" -> "\t\t\t\t${it.value}Button = from(view.root).lookup(#${it.value}).query()\n"
-                "textfield" -> "\t\t\t\t${it.value}TextField = from(view.root).lookup(#${it.value}).query()\n"
-                else -> ""
-            }
-            setup += lookup
+        controlHashMap.forEach { (node, id) ->
+            setup += "\t\t\t\t$id${controlDictionary[node.uiNode]} = from(view.root).lookup(#$id).query()\n"
         }
 
         setup += "\t\t\t}\n\t\t}\n"
 
         setup += "\t\tprivate val listOfControls = listOf("
 
-        setup += controlHashMap.forEach {
-            "\n\t\t\tControl(${it.key}::class, \"${it.value}\"),"
+        controlHashMap.forEach { (node, type) ->
+            setup += "\n\t\t\tControl($type::class, \"$node\"),"
         }
 
+        // TODO look at this, this looks really hardcoded
         setup = setup.substring(0, setup.length - 1) + "\n\t\t)\n"
 
         return setup
@@ -270,11 +271,12 @@ class FXTestBuilders : Controller() {
         var formTests = ""
         var hasButton = false
 
-        formControls.forEach { (uiNode, id) ->
-            if (uiNode.uiNode != "form") {
-                formTests += testIndividualNodeStub(uiNode, id)
+        formControls.forEach { (node, id) ->
+            if (node.uiNode == "button") hasButton = true
+
+            if (node.uiNode != "form") {
+                formTests += testIndividualNodeStub(node, id)
             }
-            if (uiNode.uiNode == "button") hasButton = true
         }
 
         // TODO in model support, include permutations
@@ -283,8 +285,8 @@ class FXTestBuilders : Controller() {
             formTests += "\t@Test fun testInputAll() {\n"
             formControls.forEach { (node, nodeId) ->
                 formTests += when (node.uiNode) {
-                    "textfield" -> "\t\tclickOn($nodeId${controlDictionary[node.uiNode]}).write(\"Something\")\n"
-                    "button" -> "\t\tclickOn($nodeId${controlDictionary[node.uiNode]})\n"
+                    "textfield" -> "\t\tclickOn(${nodeId}TextField).write(\"Something\")\n"
+                    "button" -> "\t\tclickOn(${nodeId}Button)\n"
                     else -> ""
                 }
             }
@@ -294,8 +296,8 @@ class FXTestBuilders : Controller() {
             formTests += "\t@Test fun testEmptyForm() {\n"
             formControls.forEach { (node, nodeId) ->
                 formTests += when (node.uiNode) {
-                    "textfield" -> "\t\tclickOn($nodeId${controlDictionary[node.uiNode]}).write(\"\")\n"
-                    "button" -> "\t\tclickOn($nodeId${controlDictionary[node.uiNode]})\n"
+                    "textfield" -> "\t\tclickOn(${nodeId}TextField).write(\"\")\n"
+                    "button" -> "\t\tclickOn(${nodeId}Button)\n"
                     else -> ""
                 }
             }

@@ -22,7 +22,9 @@ data class TestClassInfo(val className: String,
                          val viewImport: String,
                          val detectedUIControls: ArrayList<UINode>,
                          val mappedViewNodes: Digraph,
-                         val tfxView: TornadoFXView)
+                         val tfxView: TornadoFXView) {
+    fun getNodeChildren(node: UINode): HashSet<UINode> = mappedViewNodes.getChildren(node)
+}
 
 
 data class UINode(val uiNode: String,
