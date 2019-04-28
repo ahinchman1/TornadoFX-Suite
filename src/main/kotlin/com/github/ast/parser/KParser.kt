@@ -10,7 +10,7 @@ import kotlin.collections.HashMap
 class KParser: Controller() {
 
     var classes = ArrayList<ClassBreakDown>()
-    private var independentFunctions = ArrayList<String>()
+    var independentFunctions = ArrayList<String>()
     var detectedUIControls = HashMap<String, ArrayList<UINode>>()
     var mapClassViewNodes = HashMap<String, Digraph>()
     var tfxViews = HashMap<String, TornadoFXView>()
@@ -20,7 +20,7 @@ class KParser: Controller() {
     fun parseAST(textFile: String, path: String) {
         val file = Parser.parseFile(textFile, true)
 
-        file.decls.forEach {node ->
+        file.decls.forEach { node ->
             when (node) {
                 is Node.Decl.Structured -> breakDownClass(node.name, file, path)
                 is Node.Decl.Func -> node.name ?: independentFunctions.add(node.name.toString())
@@ -29,6 +29,7 @@ class KParser: Controller() {
     }
 
     private fun breakDownClass(className: String, file: Node.File, path: String) {
+        val classes = ArrayList<ClassBreakDown>()
         val classProperties = ArrayList<Property>()
         val classMethods = ArrayList<Method>()
         val classParents = ArrayList<String>()
@@ -87,12 +88,15 @@ class KParser: Controller() {
         }
 
         // TODO write a mechanism to detect nodes per function after AST parse job is complete
-        classMethods.add(Method(
-                name = methodJson.name(),
-                parameters = parameters,
-                returnType = returnType,
-                methodStatements = methodStatements,
-                viewNodesAffected = ArrayList()))
+        classMethods.add(
+                Method(
+                        name = methodJson.name(),
+                        parameters = parameters,
+                        returnType = returnType,
+                        methodStatements = methodStatements,
+                        viewNodesAffected = ArrayList()
+                )
+        )
     }
 
 

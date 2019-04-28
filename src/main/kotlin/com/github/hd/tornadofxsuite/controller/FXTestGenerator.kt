@@ -1,30 +1,30 @@
 package com.github.hd.tornadofxsuite.controller
 
-import com.github.ast.parser.KParser
-import com.github.hd.tornadofxsuite.view.Dialog
-import com.github.hd.tornadofxsuite.view.FetchCompletedEvent
-import com.github.hd.tornadofxsuite.view.MainView
-import javafx.util.Duration
+import com.github.ast.parser.*
+import com.github.hd.tornadofxsuite.view.ReadFilesRequest
 import tornadofx.*
 import java.io.BufferedReader
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.HashMap
+
+class PrintFileToConsole(val file: String, val textFile: String): FXEvent()
+class ParsedNodeHierarchies()
 
 class FXTestGenerator: Controller() {
-    val kotlinFiles = ArrayList<File>()
-    private val view: MainView by inject()
+    private val kotlinFiles = ArrayList<File>()
     private val scanner: KParser by inject()
 
-     fun walk(path: String) {
+    fun walk(path: String) {
         Files.walk(Paths.get(path)).use { allFiles ->
             allFiles.filter { path -> path.toString().endsWith(".kt") }
                     .forEach {
                         fileOutputRead(it)
                     }
         }
-        consoleLog()
+        consoleLogViewHierarchy()
     }
 
     private fun fileOutputRead(path: Path) {
@@ -32,28 +32,57 @@ class FXTestGenerator: Controller() {
         readFiles(file, path.toUri().path)
     }
 
-    private fun consoleLog() {
-        // print and format classes
-        /*scanner.classes.forEach {
-            println("CLASS NAME: " + it.className)
-            println("CLASS PROPERTIES: ")
-            it.classProperties.forEach { property ->
-                println("\t" + property.propertyName + ": " + property.propertyType)
-            }
-            println("CLASS METHODS: ")
-            var buildMethods = ""
-            it.classMethods.forEach { method ->
-                buildMethods += "-----------------\n|\tname:${method.name}\n|\tparameters: "
-                    method.parameters.forEach { parameter ->
-                        buildMethods += "|\t\t${parameter.valOrVar} ${parameter.propertyName}: " +
-                                "${parameter.propertyType}\n"
-                    }
-                buildMethods += "|\t method" + method.methodStatements + "\n-----------------\n"
-            }
-            println(buildMethods)
+    private fun readFiles(file: File, path: String) {
+        val fileText = file.bufferedReader().use(BufferedReader::readText)
 
-        }*/
-        
+
+        if (filterFiles(fileText)) {
+            kotlinFiles.add(file)
+            fire(PrintFileToConsole(file.toString(), fileText))
+            // runAsync {
+                scanner.parseAST(fileText, path)
+            // } ui {
+            //    it
+            // }
+        }
+    }
+
+    /**
+     * Breakdown controls and class information to write test files for every relevant view/fragment
+     */
+    private fun breakupClasses(
+            viewImports: HashMap<String, String>,
+            mappedViewNodes: HashMap<String, Digraph>,
+            detectedUIControls: HashMap<String, java.util.ArrayList<UINode>>,
+            tfxViews: HashMap<String, TornadoFXView>
+    ): java.util.ArrayList<TestClassInfo> {
+        val classes = java.util.ArrayList<TestClassInfo>()
+
+        viewImports.forEach { (className, item) ->
+            // check that all items are there
+            if (detectedUIControls.containsKey(className) &&
+                    mappedViewNodes.containsKey(className)) {
+                val uiControls = detectedUIControls[className] ?: java.util.ArrayList()
+                val mappedNodes = mappedViewNodes[className] ?: Digraph()
+                val tfxView = tfxViews[className] ?: TornadoFXView()
+
+                classes.add(TestClassInfo(className, item, uiControls, mappedNodes, tfxView))
+            } else println("Missing info for $className")
+        }
+
+        return classes
+    }
+
+    // TODO: Either use regex or better parsing
+    // filter files for only Views and Controllers
+    private fun filterFiles(fileText: String): Boolean {
+        return !fileText.contains("ApplicationTest()")
+                && !fileText.contains("src/test")
+                && !fileText.contains("@Test")
+                && !fileText.contains("class Styles")
+    }
+
+    private fun consoleLogViewHierarchy() {
         if (scanner.mapClassViewNodes.size > 0) {
             println("DETECTED LAMBDA ELEMENTS IN PROJECT: ")
             scanner.mapClassViewNodes.forEach { (className, digraph) ->
@@ -79,30 +108,36 @@ class FXTestGenerator: Controller() {
         }
     }
 
-    private fun readFiles(file: File, path: String) {
-        val fileText = file.bufferedReader().use(BufferedReader::readText)
-        val console = view.console.items
-        if (filterFiles(fileText)) {
-            console.add(view.consolePath + file.toString())
-            console.add("READING FILES...")
-            kotlinFiles.add(file)
-            console.add(fileText)
-            console.add("===================================================================")
-            scanner.parseAST(fileText, path)
+    // TODO go back to method breakdown, make it testable and work on formating
+    fun consoleLogClassBreakdown() {
+        scanner.classes.forEach { classBreakDown ->
+            println("CLASS NAME: " + classBreakDown.className)
+            println("CLASS PROPERTIES: ")
+            classBreakDown.classProperties.forEach { property ->
+                println("\t${property.propertyName}: ${property.propertyType}")
+            }
+            println("CLASS METHODS: ")
+            var buildMethods = ""
+            classBreakDown.classMethods.forEach { method ->
+                buildMethods += buildMethodStatement(buildMethods, method)
+            }
+
+            println(buildMethods)
         }
     }
 
-    // TODO: Either use regex or better parsing
-    // filter files for only Views and Controllers
-    private fun filterFiles(fileText: String): Boolean {
-        return !fileText.contains("ApplicationTest()")
-                && !fileText.contains("src/test")
-                && !fileText.contains("@Test")
-                && !fileText.contains("class Styles")
-    }
+    // TODO go back to method breakdown, make it testable
+    private fun buildMethodStatement(buildMethod: String, method: Method): String {
+        var methodStatement = buildMethod
+        methodStatement += "-----------------\n|\tname:${method.name}\n|\tparameters: "
 
-    fun askUserDialog() {
-        view.overlay.fade(Duration.millis(2000.0), .5)
-        find(Dialog::class).openModal()
+        method.parameters.forEach { parameter ->
+            methodStatement += "|\t\t${parameter.valOrVar} ${parameter.propertyName}: " +
+                    "${parameter.propertyType}\n"
+        }
+
+        methodStatement += "|\t method" + method.methodStatements + "\n-----------------\n"
+
+        return methodStatement
     }
 }

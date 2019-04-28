@@ -65,6 +65,7 @@ class FXTestBuilders : Controller() {
         return classes
     }
 
+
     /**
      * Generates random ids for detected UI nodes to attach to test application view/fragment
      * at runtime.
