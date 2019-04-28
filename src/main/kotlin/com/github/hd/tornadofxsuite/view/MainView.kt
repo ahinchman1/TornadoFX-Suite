@@ -1,7 +1,9 @@
 package com.github.hd.tornadofxsuite.view
 
+import com.github.ast.parser.TestClassInfo
 import com.github.hd.tornadofxsuite.app.Styles
 import com.github.hd.tornadofxsuite.controller.FXTestGenerator
+import com.github.hd.tornadofxsuite.controller.OnParsingComplete
 import com.github.hd.tornadofxsuite.controller.PrintFileToConsole
 import javafx.geometry.Pos
 import javafx.scene.control.ListView
@@ -14,6 +16,7 @@ class ReadFilesRequest(val file: File) : FXEvent(EventBus.RunOn.BackgroundThread
 
 class MainView : View() {
     private val testGenerator: FXTestGenerator by inject()
+    val classesTestInfo = ArrayList<TestClassInfo>()
     val consolePath = System.getProperty("os.name") + " ~ " + System.getProperty("user.name") + ": "
     lateinit var console: ListView<String>
     lateinit var overlay: HBox
@@ -21,6 +24,11 @@ class MainView : View() {
     init {
         subscribe<ReadFilesRequest> { event ->
             testGenerator.walk(event.file.absolutePath)
+        }
+
+        subscribe<OnParsingComplete> { event ->
+            classesTestInfo.addAll(event.testClassInfo)
+            askUserDialog()
         }
     }
 
@@ -67,7 +75,6 @@ class MainView : View() {
                         console.items.clear()
                         console.items.add("SEARCHING FILES...")
                         fire(ReadFilesRequest(it))
-                        askUserDialog()
                     }
                 }
                 vboxConstraints {
@@ -82,11 +89,7 @@ class MainView : View() {
             prefWidth = 800.0
             prefHeight = 600.0
             isMouseTransparent = true
-            style {
-                backgroundColor += c("#222")
-                opacity = 0.0
-            }
-        }
+        }.addClass(Styles.transparentLayer)
     }
 
     private fun writeFileToConsole(file: String, fileText: String) {

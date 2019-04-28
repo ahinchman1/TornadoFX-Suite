@@ -2,36 +2,48 @@ package com.github.hd.tornadofxsuite.controller
 
 import com.github.ast.parser.*
 import com.github.hd.tornadofxsuite.view.ReadFilesRequest
+import org.junit.runners.model.TestClass
 import tornadofx.*
 import java.io.BufferedReader
 import java.io.File
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.HashMap
+import java.util.*
+import kotlin.collections.ArrayList
 
 class PrintFileToConsole(val file: String, val textFile: String): FXEvent()
-class ParsedNodeHierarchies()
+class OnParsingComplete(val testClassInfo: ArrayList<TestClassInfo>): FXEvent()
 
 class FXTestGenerator: Controller() {
     private val kotlinFiles = ArrayList<File>()
     private val scanner: KParser by inject()
 
+    /**
+     * Open every file for AST parsing and send class breakdown for test generation
+     */
     fun walk(path: String) {
         Files.walk(Paths.get(path)).use { allFiles ->
             allFiles.filter { path -> path.toString().endsWith(".kt") }
-                    .forEach {
-                        fileOutputRead(it)
+                    .forEach {path ->
+                        val file = File(path.toUri())
+                        readFiles(file, path.toUri().path)
                     }
         }
         consoleLogViewHierarchy()
+
+        val classes = breakupClasses(
+                scanner.viewImports,
+                scanner.mapClassViewNodes,
+                scanner.detectedUIControls,
+                scanner.tfxViews
+        )
+
+        fire(OnParsingComplete(classes))
     }
 
-    private fun fileOutputRead(path: Path) {
-        val file = File(path.toUri())
-        readFiles(file, path.toUri().path)
-    }
-
+    /**
+     * Read file and start analyzing file with AST parsing
+     */
     private fun readFiles(file: File, path: String) {
         val fileText = file.bufferedReader().use(BufferedReader::readText)
 
@@ -39,11 +51,7 @@ class FXTestGenerator: Controller() {
         if (filterFiles(fileText)) {
             kotlinFiles.add(file)
             fire(PrintFileToConsole(file.toString(), fileText))
-            // runAsync {
-                scanner.parseAST(fileText, path)
-            // } ui {
-            //    it
-            // }
+            scanner.parseAST(fileText, path)
         }
     }
 
@@ -73,8 +81,9 @@ class FXTestGenerator: Controller() {
         return classes
     }
 
-    // TODO: Either use regex or better parsing
-    // filter files for only Views and Controllers
+    /**
+     * Filter files for only Views and Controllers
+     */
     private fun filterFiles(fileText: String): Boolean {
         return !fileText.contains("ApplicationTest()")
                 && !fileText.contains("src/test")
@@ -82,6 +91,9 @@ class FXTestGenerator: Controller() {
                 && !fileText.contains("class Styles")
     }
 
+    /**
+     * Print entire View Hierarchy
+     */
     private fun consoleLogViewHierarchy() {
         if (scanner.mapClassViewNodes.size > 0) {
             println("DETECTED LAMBDA ELEMENTS IN PROJECT: ")
@@ -108,7 +120,10 @@ class FXTestGenerator: Controller() {
         }
     }
 
-    // TODO go back to method breakdown, make it testable and work on formating
+    /**
+     * Prints class breakdown including methods
+     * TODO - Finish method breakdown formatting and make it testable
+     */
     fun consoleLogClassBreakdown() {
         scanner.classes.forEach { classBreakDown ->
             println("CLASS NAME: " + classBreakDown.className)
@@ -126,7 +141,10 @@ class FXTestGenerator: Controller() {
         }
     }
 
-    // TODO go back to method breakdown, make it testable
+    /**
+     * Prints method breakdown
+     * TODO - Finish method breakdown formatting and make it testable
+     */
     private fun buildMethodStatement(buildMethod: String, method: Method): String {
         var methodStatement = buildMethod
         methodStatement += "-----------------\n|\tname:${method.name}\n|\tparameters: "

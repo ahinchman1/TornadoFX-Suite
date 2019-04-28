@@ -381,7 +381,6 @@ class KParser: Controller() {
     /**
      * This is probably fine for now
      */
-
     private fun getProperty(node: JsonObject, isolated: JsonObject, isolatedName: String): Property {
 
         val type = node.expr().expr().name()
@@ -426,9 +425,15 @@ class KParser: Controller() {
         return Property(valOrVar(node), isolatedName, isolatedType)
     }
 
+    /**
+     * Kastree readOnly values indicates whether a value is a 'val' or 'var'
+     */
     private fun valOrVar(node: JsonObject): String = if (node.readOnly()) "val " else "var "
 
-    // For TornadoFX DSLs which will also build a digraph representation
+    /**
+     * TornadoFX specific:
+     *    Detects TornadoFX View component DSLs which builds a digraph representation
+     */
     private fun detectLambdaControls(node: JsonObject,
                                      className: String,
                                      nodeHier: LinkedList<String>,
@@ -476,7 +481,10 @@ class KParser: Controller() {
         }
     }
 
-    // using the enum class to check for control values here
+    /**
+     * TornadoFX specific:
+     *    Using enum classes to check for control values here
+     */
     private inline fun <reified T : Enum<T>> addControls(control: UINode,
                                                          className: String) {
         enumValues<T>().forEach {
@@ -488,14 +496,6 @@ class KParser: Controller() {
                 detectedUIControls[className]?.add(control)
             }
         }
-    }
-
-    private fun printLinked(linkedList: LinkedList<String>): String {
-        var printlinked = ""
-        linkedList.toArray().forEachIndexed { index, node ->
-            printlinked += if (index != linkedList.size - 1) "$node -> " else "$node"
-        }
-        return printlinked
     }
 
     private fun JsonObject.getType() = this.pieces().getObject(0).name()

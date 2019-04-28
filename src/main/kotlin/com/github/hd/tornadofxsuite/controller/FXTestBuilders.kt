@@ -21,48 +21,16 @@ class FXTestBuilders : Controller() {
 
     private val controlHashMap = hashMapOf<UINode, String>()
 
-    // supports one set of forms at a time per view for now
     private var forms = hashMapOf<UINode, String>()
 
-    fun generateTests(
-            viewImports: HashMap<String, String>,
-            mappedViewNodes: HashMap<String, Digraph>,
-            detectedUIControls: HashMap<String, ArrayList<UINode>>,
-            tfxViews: HashMap<String, TornadoFXView>
-    ) {
-        // Step 1: Breakup classes
-        val classes = breakupClasses(viewImports, mappedViewNodes, detectedUIControls, tfxViews)
-
-        // Step 2: Write each file with their imports
+    /**
+     * Write tests by the file
+     */
+    fun generateTests(classes: ArrayList<TestClassInfo>) {
+        // Step 1: Write each file with their imports
         for (item in classes) {
             writeTestFile(item)
         }
-    }
-
-    /**
-     * Breakdown controls and class information to write test files for every relevant view/fragment
-     */
-    private fun breakupClasses(
-            viewImports: HashMap<String, String>,
-            mappedViewNodes: HashMap<String, Digraph>,
-            detectedUIControls: HashMap<String, ArrayList<UINode>>,
-            tfxViews: HashMap<String, TornadoFXView>
-    ): ArrayList<TestClassInfo> {
-        val classes = ArrayList<TestClassInfo>()
-
-        viewImports.forEach { (className, item) ->
-            // check that all items are there
-            if (detectedUIControls.containsKey(className) &&
-                    mappedViewNodes.containsKey(className)) {
-                val uiControls = detectedUIControls[className] ?: ArrayList()
-                val mappedNodes = mappedViewNodes[className] ?: Digraph()
-                val tfxView = tfxViews[className] ?: TornadoFXView()
-
-                classes.add(TestClassInfo(className, item, uiControls, mappedNodes, tfxView))
-            } else println("Missing info for $className")
-        }
-
-        return classes
     }
 
 
@@ -123,7 +91,7 @@ class FXTestBuilders : Controller() {
                 controls +
                 dynamicallyAddIds()
 
-        // Step 3. separate out controls by groupings i.e. forms
+        // Step 2. separate out controls by groupings i.e. forms
         if (forms.isNotEmpty()) {
 
             forms.forEach { (node, _) ->
@@ -136,7 +104,7 @@ class FXTestBuilders : Controller() {
                     controlHashMap.remove(field)
                 }
 
-                // Step 4: According to a dictionaries of tests, write necessary combinations
+                // Step 3: According to a dictionaries of tests, write necessary combinations
                 buildFormTests(formControlMap)
             }
         }

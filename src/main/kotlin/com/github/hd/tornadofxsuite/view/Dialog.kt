@@ -1,7 +1,6 @@
 package com.github.hd.tornadofxsuite.view
 
 import com.github.ast.parser.KParser
-import com.github.ast.parser.TestClassInfo
 import com.github.hd.tornadofxsuite.app.Styles
 import com.github.hd.tornadofxsuite.controller.FXTestBuilders
 import javafx.scene.control.Button
@@ -41,7 +40,6 @@ class Dialog : Fragment() {
                                         viewNode += if (index < children.size) {
                                             " -> ${node.uiNode} "
                                         } else "${node.uiNode}\n"
-
                                     }
                                     items.add(viewNode)
                                 }
@@ -75,12 +73,7 @@ class Dialog : Fragment() {
         generateButton = button("Generate Tests") {
             isVisible = false
             action {
-                testBuilder.generateTests(
-                        scanner.viewImports,
-                        scanner.mapClassViewNodes,
-                        scanner.detectedUIControls,
-                        scanner.tfxViews
-                )
+                testBuilder.generateTests(view.classesTestInfo)
                 view.overlay.apply {
                     style {
                         opacity = 0.0
