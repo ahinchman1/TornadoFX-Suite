@@ -26,7 +26,6 @@ data class TestClassInfo(val className: String,
     fun getNodeChildren(node: UINode): HashSet<UINode> = mappedViewNodes.getChildren(node)
 }
 
-
 data class UINode(val uiNode: String,
                   val level: Int,
                   val nodeTree: JsonObject, // how to identify the nodeTree

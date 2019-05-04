@@ -1,8 +1,6 @@
 package com.github.hd.tornadofxsuite.controller
 
 import com.github.ast.parser.*
-import com.github.hd.tornadofxsuite.view.ReadFilesRequest
-import org.junit.runners.model.TestClass
 import tornadofx.*
 import java.io.BufferedReader
 import java.io.File
@@ -30,6 +28,7 @@ class FXTestGenerator: Controller() {
                     }
         }
         consoleLogViewHierarchy()
+        consoleLogClassBreakdown()
 
         val classes = breakupClasses(
                 scanner.viewImports,
