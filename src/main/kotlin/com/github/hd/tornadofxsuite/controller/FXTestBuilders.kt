@@ -6,7 +6,6 @@ import com.github.ast.parser.UINode
 import tornadofx.*
 import java.io.File
 import java.util.ArrayList
-import java.util.HashMap
 import kotlin.random.Random
 
 class FXTestBuilders : Controller() {
@@ -14,69 +13,39 @@ class FXTestBuilders : Controller() {
     // TODO - may need to refactor with the enums definitions in TornadoFX.kt, enums are redundant
     private val controlDictionary = hashMapOf(
             "form" to "Form",
-            "textfield" to "Textfield",
+            "textfield" to "TextField",
             "button" to "Button"
     )
 
-    private val controlHashMap = hashMapOf<UINode, String>()
+    private var controls = mutableMapOf<UINode, String>()
 
-    // supports one set of forms at a time per view for now
-    private var form: UINode? = null
+    private var forms = mutableMapOf<UINode, String>()
 
-    fun generateTests(
-            viewImports: HashMap<String, String>,
-            mappedViewNodes: HashMap<String, Digraph>,
-            detectedUIControls: HashMap<String, ArrayList<UINode>>
-    ) {
-
-        // Step 1: Breakup classes
-        val classes = breakupClasses(viewImports, mappedViewNodes, detectedUIControls)
-
-        // Step 2: Write each file with their imports
+    /**
+     * Write tests by the file
+     */
+    fun generateTests(classes: ArrayList<TestClassInfo>) {
+        // Step 1: Write each file with their imports
         for (item in classes) {
             writeTestFile(item)
         }
     }
 
-    /**
-     * Breakdown controls and class information to write test files for every relevant view/fragment
-     */
-    private fun breakupClasses(
-            viewImports: HashMap<String, String>,
-            mappedViewNodes: HashMap<String, Digraph>,
-            detectedUIControls: HashMap<String, ArrayList<UINode>>
-    ): ArrayList<TestClassInfo> {
-        val classes = ArrayList<TestClassInfo>()
-
-        viewImports.forEach {className, item ->
-            // check that all items are there
-            if (detectedUIControls.containsKey(className) &&
-                    mappedViewNodes.containsKey(className)) {
-                val uiControls = detectedUIControls[className] ?: ArrayList()
-                val mappedNodes = mappedViewNodes[className] ?: Digraph()
-
-                classes.add(TestClassInfo(className, item, uiControls, mappedNodes))
-            } else println("Missing info for $className")
-        }
-
-        return classes
-    }
 
     /**
      * Generates random ids for detected UI nodes to attach to test application view/fragment
      * at runtime.
      */
     private fun createControls(classInfo: TestClassInfo): String {
-        var controlList = "\tprivate val listOfControls = listOf(\n"
+        var controlList = "\n\n\tprivate val listOfControls = listOf(\n"
 
         classInfo.detectedUIControls.forEach {
             val id = randomString()
-            controlList += "\t\tControl(" + controlDictionary[it.uiNode] +
-                    "::class, " + id + ")\n"
-            controlHashMap[it] = id
+            controlList += "\t\tControl(${controlDictionary[it.uiNode]}::class, \"$id\")\n"
+            controls[it] = id
         }
 
-        return "$controlList\n\t)"
+        return "$controlList\n\t)\n\n"
     }
 
     /**
@@ -103,39 +72,50 @@ class FXTestBuilders : Controller() {
             import org.testfx.framework.junit.ApplicationTest
             import ${classInfo.viewImport}
 
-            data class Control(val type: KClass<out Node>,
-                   val id: String,
-                   val isAssigned: Boolean = false)
+            data class Control(
+                val type: KClass<out Node>,
+                val id: String,
+                val isAssigned: Boolean = false
+            )
 
             class TestView: View() {
                 override val root = vbox()
             }
 
             class ${classInfo.className}Test: ApplicationTest {
+
+                lateinit var primaryStage: Stage
+
+                val view = TestView()
         """.trimIndent() +
-                setup() +
                 controls +
+                setup(classInfo) +
                 dynamicallyAddIds()
 
-        // Step 3. separate out controls by groupings i.e. forms
-        if (form != null) {
-            // supports one set of forms at a time per view for now
-            val formControlMap = hashMapOf<UINode, String>()
+        // Step 2. separate out controls by groupings i.e. forms
+        if (forms.isNotEmpty()) {
 
-            controlHashMap.forEach { uiNode, id ->
-                isNodeInForm(classInfo.mappedViewNodes, formControlMap, uiNode, id, form as UINode)
+            forms.forEach { (node, _) ->
+                val formControlMap = mutableMapOf<UINode, String>()
+
+                // TODO check if this actually works
+                // Move field set controls out of controls
+                classInfo.getNodeChildren(node).forEach { field ->
+                    formControlMap[field] = this.controls[field] ?: ""
+                    this.controls.remove(field)
+                }
+
+                // Step 3: According to a dictionaries of tests, write necessary combinations
+                buildFormTests(formControlMap)
             }
-
-            // Step 4: According to a dictionaries of tests, write necessary combinations
-            buildFormTests(formControlMap)
         }
 
         // Step 4: According to a dictionaries of tests, write necessary combinations
-        controlHashMap.forEach { uiNode, id ->
+        this.controls.forEach { (uiNode, id) ->
             file += testIndividualNodeStub(uiNode, id)
         }
 
-        file += "}"
+        file += "\n}"
 
         File("${classInfo.className}Test.kt")
                 .printWriter().use {out -> out.println(file)}
@@ -145,55 +125,44 @@ class FXTestBuilders : Controller() {
      * The @Before test method of the TestFX application.  Saves desired UI controls as
      * member variables to use throughout the rest of the testing class
      */
-    private fun setup(): String {
+    private fun setup(classInfo: TestClassInfo): String {
 
         var setup = ""
 
-        controlHashMap.forEach {
-            if (it.key.uiNode == "form") {
-                form = it.key
+        controls.forEach { (node, id) ->
+            if (node.uiNode == "form") {
+                forms[node] = id
             }
-            val formVar = "\tlateinit var ${it.value}${controlDictionary[it.value]}: ${controlDictionary[it.value]}\n"
+            val nodeType = controlDictionary[node.uiNode]
+            val formVar = "\tlateinit var $id$nodeType: $nodeType\n"
             setup += formVar
         }
 
-        setup +=  """
-
-                @Before
-                fun setup() {
-                    primaryStage = FxToolkit.registerPrimaryStage()
-                    val fragment = find<Editor>(CatScheduleScope())
-
-                    view.root.add(fragment.root)
-
-                    addAllIdsToDescendents(view.root)
-
-                    interact {
-                        primaryStage.scene = Scene(view.root)
-                        primaryStage.show()
-                        primaryStage.toFront()
-
-        """.trimIndent()
-
-        controlHashMap.forEach {
-            val lookup = when (it.key.uiNode) {
-                "form" -> "\t\t\t\t${it.value}Form = from(view.root).lookup(#${it.value}).query()\n"
-                "button" -> "\t\t\t\t${it.value}Button = from(view.root).lookup(#${it.value}).query()\n"
-                "textfield" -> "\t\t\t\t${it.value}TextField = from(view.root).lookup(#${it.value}).query()\n"
-                else -> ""
-            }
-            setup += lookup
+        forms.forEach { (node, _) ->
+            controls.remove(node)
         }
 
-        setup += "\t\t\t}\n\t\t}\n"
+        setup += """
+    @Before
+    fun setup() {
+        primaryStage = FxToolkit.registerPrimaryStage()
 
-        setup += "\t\tprivate val listOfControls = listOf("
+        val ${classInfo.className.toLowerCase()}${classInfo.tfxView.type} = find<${classInfo.className}>(${classInfo.tfxView.scope})
 
-        setup += controlHashMap.forEach {
-            "\n\t\t\tControl(${it.key}::class, \"${it.value}\"),"
+        view.root.add(${classInfo.className.toLowerCase()}${classInfo.tfxView.type}.root)
+        addAllIdsToDescendants(view.root)
+
+        interact {
+            primaryStage.scene = Scene(view.root)
+            primaryStage.show()
+            primaryStage.toFront()
+        """
+
+        controls.forEach { (node, id) ->
+            setup += "\n\t\t\t$id${controlDictionary[node.uiNode]} = from(view.root).lookup(#$id).query()"
         }
 
-        setup = setup.substring(0, setup.length - 1) + "\n\t\t)\n"
+        setup += "\t\t}\n\t}\n"
 
         return setup
     }
@@ -201,43 +170,42 @@ class FXTestBuilders : Controller() {
     /**
      * Code needed to attached generated random ids to respective UI elements at runtime.
      */
-    private fun dynamicallyAddIds(): String {
-        return """
-                private fun addAllIdsToDescendents(parent: Parent) {
-                    for (node in parent.childrenUnmodifiable) {
-                        checkToAttachNodeId(node)
-                        if (node is Parent) {
-                            addAllIdsToDescendents(node)
-                        }
-                    }
+    private fun dynamicallyAddIds() = """
+        private fun addAllIdsToDescendants(parent: Parent) {
+            for (node in parent.childrenUnmodifiable) {
+                checkToAttachNodeId(node)
+                if (node is Parent) {
+                    addAllIdsToDescendants(node)
                 }
+            }
+        }
 
-                private fun checkToAttachNodeId(node: Node) {
-                    listOfControls.forEach { control ->
-                        if (control.type.isInstance(node) &&
-                                !control.isAssigned &&
-                                node.id == null) {
-                            node.id = control.id
-                            control.isAssigned
-                        }
-                    }
+        private fun checkToAttachNodeId(node: Node) {
+            listOfControls.forEach { control ->
+                if (control.type.isInstance(node) &&
+                        !control.isAssigned &&
+                        node.id == null) {
+                    node.id = control.id
+                    control.isAssigned
                 }
-        """.trimIndent()
-    }
+            }
+        }""".replaceIndent("\t") + "\n"
 
     /**
      * If a node is in a form, node testing may interact together in a particular way.
-     * Pull out of control HashMap into a new HashMap grouping for testing
+     * Pull out of control MutableMap into a new MutableMap grouping for testing
      */
-    private fun isNodeInForm(digraph: Digraph,
-                             formControlMap: HashMap<UINode, String>,
-                             nodeControl: UINode,
-                             nodeId: String,
-                             form: UINode) {
+    private fun isNodeInForm(
+            digraph: Digraph,
+            formControlMap: MutableMap<UINode, String>,
+            nodeControl: UINode,
+            nodeId: String,
+            form: UINode
+    ) {
         val nodePath = digraph.depthFirstSearch(form, nodeControl)
 
         if (nodePath.isNotEmpty()) {
-            controlHashMap.remove(nodeControl)
+            controls.remove(nodeControl)
             formControlMap[nodeControl] = nodeId
         }
     }
@@ -260,36 +228,37 @@ class FXTestBuilders : Controller() {
     /**
      * Test individual nodes but also combinations of those interactions
      */
-    private fun buildFormTests(formControls: HashMap<UINode, String>): String {
-        var formTests = ""
+    private fun buildFormTests(formControls: MutableMap<UINode, String>): String {
+        var formTests = "\t/**\t*  Form tests\t**/"
         var hasButton = false
 
-        formControls.forEach { uiNode, id ->
-            if (uiNode.uiNode != "form") {
-                formTests += testIndividualNodeStub(uiNode, id)
+        formControls.forEach { (node, id) ->
+            if (node.uiNode == "button") hasButton = true
+
+            if (node.uiNode != "form") {
+                formTests += testIndividualNodeStub(node, id)
             }
-            if (uiNode.uiNode == "button") hasButton = true
         }
 
         // TODO in model support, include permutations
         if (hasButton) {
-            // input something in all textfields and clicks a button
-            formTests += "\t@Test fun testInputAll() {\n"
-            formControls.forEach { node, nodeId ->
+            // input "Something" in all textfields and clicks a button
+            formTests += "\t@Test\n\tfun testInputAll() {\n"
+            formControls.forEach { (node, nodeId) ->
                 formTests += when (node.uiNode) {
-                    "textfield" -> "\t\tclickOn($nodeId${controlDictionary[node.uiNode]}).write(\"Something\")\n"
-                    "button" -> "\t\tclickOn($nodeId${controlDictionary[node.uiNode]})\n"
+                    "textfield" -> "\t\tclickOn(${nodeId}TextField).write(\"Something\")\n"
+                    "button" -> "\t\tclickOn(${nodeId}Button)\n"
                     else -> ""
                 }
             }
             formTests += "\t}\n\n"
 
             // input nothing and click button
-            formTests += "\t@Test fun testEmptyForm() {\n"
-            formControls.forEach { node, nodeId ->
+            formTests += "\t@Test\n\tfun testEmptyForm() {\n"
+            formControls.forEach { (node, nodeId) ->
                 formTests += when (node.uiNode) {
-                    "textfield" -> "\t\tclickOn($nodeId${controlDictionary[node.uiNode]}).write(\"\")\n"
-                    "button" -> "\t\tclickOn($nodeId${controlDictionary[node.uiNode]})\n"
+                    "textfield" -> "\t\tclickOn(${nodeId}TextField).write(\"\")\n"
+                    "button" -> "\t\tclickOn(${nodeId}Button)\n"
                     else -> ""
                 }
             }
@@ -302,28 +271,25 @@ class FXTestBuilders : Controller() {
     /**
      * Test stubs written for every control detected. TestFX matchers and unit testing here.
      */
-    private fun testIndividualNodeStub(node: UINode,
-                                       nodeId: String): String {
-        val performAnActionAndCheckExpectation = performIndividualAction(node, nodeId)
+    private fun testIndividualNodeStub(
+            node: UINode,
+            nodeId: String
+    ) = "\n\t@Test" +
+            "\n\tfun test$nodeId${controlDictionary[node.uiNode]}() {" +
+            "\n${performIndividualAction(node, nodeId)}\n" +
+            "\t}"
 
-        // TODO - add scopes to class breakdown for fragments. Need scope support.
-
-        return """
-
-                @Test fun test$nodeId${node.uiNode}() {
-                    $performAnActionAndCheckExpectation
-                }
-        """.trimIndent()
-    }
-
-    private fun performIndividualAction(node: UINode,
-                                        nodeId: String): String {
-        return when (node.uiNode) {
+    /**
+     * TestFX interacts with individual UI Node
+     */
+    private fun performIndividualAction(
+            node: UINode,
+            nodeId: String
+    ) = when (node.uiNode) {
             "textfield" -> buildTextFieldTest(node, nodeId)
             "button" -> buildButtonTest(node, nodeId)
             else -> ""
         }
-    }
 
     /**
      * Stage 1: If there's an argument in the textfield, we may assume that it may be filled
@@ -333,29 +299,26 @@ class FXTestBuilders : Controller() {
      *
      * Further considerations:  Implement model checks. Will need to provide support for models
      */
-    private fun buildTextFieldTest(node: UINode,
-                                   nodeId: String): String {
+    private fun buildTextFieldTest(
+            node: UINode,
+            nodeId: String
+    ) = if (node.nodeTree.has("args")) {
+        // may be potentially flappy if a model parameter returns an empty
+        """
+            assertNotNull($nodeId${node.uiNode}.text)
+            assertTrue(!$nodeId${node.uiNode}.text.isNullOrEmpty())
 
-        return if (node.nodeTree.has("args")) {
-            // this may be potentially flappy if a model parameter returns an empty
-            """
-                        assertNotNull($nodeId${node.uiNode}.text)
-                        assertTrue(!$nodeId${node.uiNode}.text.isNullOrEmpty())
-
-                        clickOn($nodeId${controlDictionary[node.uiNode]}).write("Something")
-                        assertEquals("Something", $nodeId${controlDictionary[node.uiNode]}.text)
-
-            """.trimIndent()
+            clickOn($nodeId${controlDictionary[node.uiNode]}).write("Something")
+            assertEquals("Something", $nodeId${controlDictionary[node.uiNode]}.text)
+        """.replaceIndent("\t\t")
         } else {
-            """
-                        assertTrue($nodeId${node.uiNode}.text.isNullOrEmpty())
+        """
+            assertTrue($nodeId${node.uiNode}.text.isNullOrEmpty())
 
-                        clickOn($nodeId${controlDictionary[node.uiNode]}).write("Something")
-                        assertEquals("Something", $nodeId${controlDictionary[node.uiNode]}.text)
-
-            """.trimIndent()
+            clickOn($nodeId${controlDictionary[node.uiNode]}).write("Something")
+            assertEquals("Something", $nodeId${controlDictionary[node.uiNode]}.text)
+        """.replaceIndent("\t\t")
         }
-    }
 
     /**
      * Stage 1: Click button.
@@ -365,18 +328,19 @@ class FXTestBuilders : Controller() {
      * Further considerations: Check the associated action and trace through to see what other
      * nodes may be affected
      */
-    private fun buildButtonTest(node: UINode,
-                                nodeId: String): String {
-        return """
-            clickOn($nodeId${controlDictionary[node.uiNode]})
-        """.trimIndent()
-    }
+    private fun buildButtonTest(
+            node: UINode,
+            nodeId: String
+    ) = "\t\tclickOn($nodeId${controlDictionary[node.uiNode]})"
 
-    private val charPool = ('0'..'z').toList().toTypedArray()
-
-    private fun randomString() = (1..7)
+    private fun randomString() = (1..STRING_LENGTH)
             .map { Random.nextInt(0, charPool.size) }
             .map(charPool::get)
             .joinToString("")
+
+    companion object {
+        const val STRING_LENGTH = 7
+        val charPool = ('0'..'z').toList().toTypedArray().filter(Char::isLetterOrDigit)
+    }
 
 }

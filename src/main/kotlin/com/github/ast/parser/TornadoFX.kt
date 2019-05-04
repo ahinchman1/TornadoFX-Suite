@@ -1,15 +1,11 @@
 package com.github.ast.parser
 
-import javafx.beans.property.SimpleObjectProperty
-import javafx.beans.property.SimpleStringProperty
-import tornadofx.*
-import java.util.ArrayList
-import java.util.HashMap
-
+// TODO - Add Model support
 enum class MODELS {
     ItemViewModel, ViewModel
 }
 
+// TODO
 enum class COMPONENTS {
     View, Fragment
 }
@@ -26,10 +22,4 @@ enum class INPUTS {
     TextField, Button, Form
 }
 
-class TornadoFXInputs(viewClass: String, inputs: ArrayList<String>) {
-    val viewClassProperty = SimpleStringProperty(this, "", viewClass)
-    var viewClass by viewClassProperty
-
-    val inputsProperty = SimpleObjectProperty(this, "", inputs)
-    var inputs by inputsProperty
-}
+data class TornadoFXView(var view: String? = "", var type: String? = "", var scope: String? = "")

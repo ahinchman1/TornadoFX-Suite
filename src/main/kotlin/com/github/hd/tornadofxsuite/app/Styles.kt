@@ -9,6 +9,7 @@ class Styles : Stylesheet() {
     companion object {
         val main by cssclass()
         val top by cssclass()
+        val transparentLayer by cssclass()
     }
 
     init {
@@ -20,6 +21,11 @@ class Styles : Stylesheet() {
         top {
             backgroundColor += c("#DD7549")
             padding = box(20.px)
+        }
+
+        transparentLayer {
+            backgroundColor += c("#222")
+            opacity = 0.0
         }
 
         button {

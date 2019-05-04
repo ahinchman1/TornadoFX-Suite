@@ -4,6 +4,7 @@ import com.google.gson.JsonObject
 import java.util.*
 
 data class ClassBreakDown(val className: String,
+                          val classParent: ArrayList<String>,
                           val classProperties: ArrayList<Property>,
                           val classMethods: ArrayList<Method>)
 
@@ -20,8 +21,10 @@ data class Method(val name: String,
 data class TestClassInfo(val className: String,
                          val viewImport: String,
                          val detectedUIControls: ArrayList<UINode>,
-                         val mappedViewNodes: Digraph)
-
+                         val mappedViewNodes: Digraph,
+                         val tfxView: TornadoFXView) {
+    fun getNodeChildren(node: UINode): HashSet<UINode> = mappedViewNodes.getChildren(node)
+}
 
 data class UINode(val uiNode: String,
                   val level: Int,
@@ -42,7 +45,9 @@ class Digraph {
     lateinit var root: UINode
     var size = 0
 
-    // add node to list
+    /**
+     * Add UI Node to List
+     */
     fun addNode(node: UINode): Boolean {
         var result = false
         if (viewNodes.isEmpty()) {
@@ -57,6 +62,9 @@ class Digraph {
         return result
     }
 
+    /**
+     * Remove UI Node from List
+     */
     fun removeNode(node: UINode): Boolean {
         var result = false
         if (viewNodes.containsKey(node)) {
@@ -71,7 +79,9 @@ class Digraph {
         return result
     }
 
-    // add child node
+    /**
+     * Add child Node to Node
+     */
     fun addEdge(source: UINode, destination: UINode): Boolean {
         var result = false
         if (viewNodes.containsKey(source)) {
@@ -84,6 +94,9 @@ class Digraph {
         return result
     }
 
+    /**
+     * Remove child Node from Node
+     */
     fun removeEdge(source: UINode, destination: UINode): Boolean {
         var result = false
         if (viewNodes.containsKey(source)) {
@@ -96,14 +109,22 @@ class Digraph {
         return result
     }
 
+    /**
+     * Check if destination Node is a child of source Node
+     */
     fun isAdjacent(source: UINode, destination: UINode): Boolean =
             viewNodes[source]?.contains(destination) ?: false
 
+    /**
+     * Check if a Node exists in the view hierarchy
+     */
     fun hasNode(node: UINode): Boolean = viewNodes.containsKey(node)
 
     fun getChildren(node: UINode): HashSet<UINode> = viewNodes[node] ?: HashSet()
 
-    // it actually needs be looking by deepness
+    /**
+     * Searches for node depth first
+     */
     fun depthFirstSearch(source: UINode, destination: UINode): Array<UINode> {
         if (!viewNodes.containsKey(source) || !viewNodes.contains(destination)) {
             return emptyArray()
@@ -114,6 +135,9 @@ class Digraph {
         return depthFirstSearch(stack, destination)
     }
 
+    /**
+     * Searches for node depth first recursive
+     */
     private fun depthFirstSearch(stack: Stack<UINode>, destination: UINode): Array<UINode> {
         val visited = HashMap<UINode, VisitStatus>()
         val path = LinkedList<UINode>()
@@ -159,8 +183,14 @@ class Digraph {
         return nodePath
     }
 
+    /**
+     * Get View Node by index
+     **/
     fun getElementByIndex(index: Int): UINode = (viewNodes.keys).toTypedArray()[index]
 
+    /**
+     * Find child-most element at level parentLevel
+     **/
     fun findLastElementWithParentLevel(parentLevel: Int): UINode {
         var lastNode = root
 

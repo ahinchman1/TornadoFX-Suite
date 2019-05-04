@@ -9,18 +9,37 @@ import kotlin.collections.HashMap
 
 class KParser: Controller() {
 
+    /**
+     * breakdown of classes/files that may have independent functions
+     */
     var classes = ArrayList<ClassBreakDown>()
-    private var independentFunctions = ArrayList<String>()
+    var independentFunctions = ArrayList<String>()
+
+    /**
+     * detectedUIControls key: by the class name
+     */
     var detectedUIControls = HashMap<String, ArrayList<UINode>>()
+
+    /**
+     * mapClassViewNodes key: by the class name
+     */
     var mapClassViewNodes = HashMap<String, Digraph>()
+
+    /**
+     * tfxViews and viewImports are saved for the test generator
+     */
+    var tfxViews = HashMap<String, TornadoFXView>()
     var viewImports = HashMap<String, String>()
+
+    /**
+     * For recursive parsing
+     */
     val gson = Gson()
 
     fun parseAST(textFile: String, path: String) {
-        // if (textFile.contains)
         val file = Parser.parseFile(textFile, true)
 
-        file.decls.forEach {node ->
+        file.decls.forEach { node ->
             when (node) {
                 is Node.Decl.Structured -> breakDownClass(node.name, file, path)
                 is Node.Decl.Func -> node.name ?: independentFunctions.add(node.name.toString())
@@ -31,18 +50,36 @@ class KParser: Controller() {
     private fun breakDownClass(className: String, file: Node.File, path: String) {
         val classProperties = ArrayList<Property>()
         val classMethods = ArrayList<Method>()
+        val classParents = ArrayList<String>()
+        val currentTFXView = TornadoFXView()
 
         gson.toJsonTree(file).asJsonObject
 
+        val clazz = file.decls[0] as Node.Decl.Structured
+
+        // collecting this info for test information
+        clazz.parents.forEach {
+            val parentClass = gson.toJsonTree(it).asJsonObject.type().getType()
+            classParents.add(parentClass)
+            if (parentClass == "Fragment" || parentClass == "View") {
+                currentTFXView.view = className
+                currentTFXView.type = parentClass
+            }
+        }
+
         // Save for all files
-        (file.decls[0] as Node.Decl.Structured).members.forEach {
+        clazz.members.forEach {
             when (it) {
                 is Node.Decl.Structured -> println("this is probably a companion object")
                 is Node.Decl.Property -> convertToClassProperty(it, classProperties, className, path)
                 is Node.Decl.Func -> breakdownClassMethod(it, classMethods)
             }
         }
-        classes.add(ClassBreakDown(className, classProperties, classMethods))
+
+        if (!currentTFXView.type.isNullOrEmpty()) {
+            tfxViews[className] = currentTFXView
+        }
+        classes.add(ClassBreakDown(className, classParents, classProperties, classMethods))
     }
 
     private fun breakdownClassMethod(method: Node.Decl.Func, classMethods: ArrayList<Method>) {
@@ -70,12 +107,15 @@ class KParser: Controller() {
         }
 
         // TODO write a mechanism to detect nodes per function after AST parse job is complete
-        classMethods.add(Method(
-                name = methodJson.name(),
-                parameters = parameters,
-                returnType = returnType,
-                methodStatements = methodStatements,
-                viewNodesAffected = ArrayList()))
+        classMethods.add(
+                Method(
+                        name = methodJson.name(),
+                        parameters = parameters,
+                        returnType = returnType,
+                        methodStatements = methodStatements,
+                        viewNodesAffected = ArrayList()
+                )
+        )
     }
 
 
@@ -112,14 +152,23 @@ class KParser: Controller() {
         }
     }
 
+    /**
+     * Not fucked up but does not account for all decl property types nor does it format properly
+     */
     private fun breakdownDeclProperty(decl: JsonObject, buildStmt: String): String {
         val isolated = decl.vars().getObject(0)
         val isolatedName = isolated.name()
         val property = when {
-            decl.expr().has("expr") -> getProperty(
-                    decl,
-                    isolated,
-                    isolatedName)
+            decl.expr().has("expr") -> {
+                if (decl.expr().has("expr") && decl.expr().has("oper")) {
+                            Property(valOrVar(decl), isolatedName, decl.vars().getObject(0).type().ref().pieces().getObject(0).name())
+                } else {
+                    getProperty(
+                            decl,
+                            isolated,
+                            isolatedName)
+                }
+            }
             decl.expr().has("lhs") &&
                 decl.expr().has("oper") &&
                 decl.expr().has("rhs") -> Property(
@@ -168,7 +217,7 @@ class KParser: Controller() {
     private fun getElems(elems: JsonArray, buildStmt: String): String {
         var buildElems = buildStmt
         if (elems.size() > 0) {
-            elems.forEach { it ->
+            elems.forEach {
                 val elem = it.asJsonObject
                 buildElems += when {
                     elem.has("str") -> elem.str()
@@ -281,14 +330,18 @@ class KParser: Controller() {
         val secondBit = "expr=Call(expr=Name(name="
         val string = property.toString()
 
-        property.vars[0]?.name
-
         val node = gson.toJsonTree(property).asJsonObject
 
         if (string.contains(secondBit)) {
             val isolated = node.vars().getObject(0)
             val isolatedName = isolated.name()
 
+            // TornadoFX-Specific
+            if (isolatedName == "scope") {
+                tfxViews[className]?.scope = node.expr().rhs().ref().getType()
+            }
+
+            // TornadoFX-Specific
             if (isolatedName == "root") {
                 viewImports[className] = saveViewImport(path)
                 println("DETECTION ORDER")
@@ -356,9 +409,8 @@ class KParser: Controller() {
     }
 
     /**
-     * This is probably fine for now
+     * This is fucked up
      */
-
     private fun getProperty(node: JsonObject, isolated: JsonObject, isolatedName: String): Property {
 
         val type = node.expr().expr().name()
@@ -371,7 +423,7 @@ class KParser: Controller() {
             // collection property
             node.expr().expr().has("name") -> {
                 isolatedType = when(type) {
-                    "inject" -> isolated.type().ref().pieces().getObject(0).name()
+                    "inject" -> isolated.type().ref().getType()
                     "listOf" -> {
                         val listOfMemberType = node.expr().typeArgs()
 
@@ -403,9 +455,15 @@ class KParser: Controller() {
         return Property(valOrVar(node), isolatedName, isolatedType)
     }
 
+    /**
+     * Kastree readOnly values indicates whether a value is a 'val' or 'var'
+     */
     private fun valOrVar(node: JsonObject): String = if (node.readOnly()) "val " else "var "
 
-    // For TornadoFX DSLs which will also build a digraph representation
+    /**
+     * TornadoFX specific:
+     *    Detects TornadoFX View component DSLs which builds a digraph representation
+     */
     private fun detectLambdaControls(node: JsonObject,
                                      className: String,
                                      nodeHier: LinkedList<String>,
@@ -440,7 +498,6 @@ class KParser: Controller() {
                 }
             }
 
-
             // TornadoFX specific
             addControls<INPUTS>(graphNode, className)
 
@@ -454,10 +511,13 @@ class KParser: Controller() {
         }
     }
 
-    // using the enum class to check for control values here
+    /**
+     * TornadoFX specific:
+     *    Using enum classes to check for control values here
+     */
     private inline fun <reified T : Enum<T>> addControls(control: UINode,
                                                          className: String) {
-        enumValues<T>().forEach { it ->
+        enumValues<T>().forEach {
             if (control.uiNode.toLowerCase() == (it.name).toLowerCase()) {
                 if (!detectedUIControls.containsKey(className)) {
                     val controlCollection = ArrayList<UINode>()
@@ -466,14 +526,6 @@ class KParser: Controller() {
                 detectedUIControls[className]?.add(control)
             }
         }
-    }
-
-    private fun printLinked(linkedList: LinkedList<String>): String {
-        var printlinked = ""
-        linkedList.toArray().forEachIndexed { index, node ->
-            printlinked += if (index != linkedList.size - 1) "$node -> " else "$node"
-        }
-        return printlinked
     }
 
     private fun JsonObject.getType() = this.pieces().getObject(0).name()

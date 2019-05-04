@@ -10,6 +10,7 @@ class Dialog : Fragment() {
 
     private val view: MainView by inject()
     private val testBuilder: FXTestBuilders by inject()
+    // TODO - still on the background thread, needs to be sent back to the main thread
     private val scanner: KParser by inject()
 
     private lateinit var generateButton: Button
@@ -29,9 +30,9 @@ class Dialog : Fragment() {
 
                     listview<String> {
                         if (scanner.mapClassViewNodes.size > 0) {
-                            scanner.mapClassViewNodes.forEach { className, digraph ->
+                            scanner.mapClassViewNodes.forEach { (className, digraph) ->
                                 items.add(className)
-                                digraph.viewNodes.forEach { bucket, children ->
+                                digraph.viewNodes.forEach { (bucket, children) ->
                                     val nodeLevel = bucket.level
                                     var viewNode = "$nodeLevel \t${bucket.uiNode}"
 
@@ -39,7 +40,6 @@ class Dialog : Fragment() {
                                         viewNode += if (index < children.size) {
                                             " -> ${node.uiNode} "
                                         } else "${node.uiNode}\n"
-
                                     }
                                     items.add(viewNode)
                                 }
@@ -73,11 +73,7 @@ class Dialog : Fragment() {
         generateButton = button("Generate Tests") {
             isVisible = false
             action {
-                testBuilder.generateTests(
-                        scanner.viewImports,
-                        scanner.mapClassViewNodes,
-                        scanner.detectedUIControls
-                )
+                testBuilder.generateTests(view.classesTestInfo)
                 view.overlay.apply {
                     style {
                         opacity = 0.0
