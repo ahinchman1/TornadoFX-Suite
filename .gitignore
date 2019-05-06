@@ -1,3 +1,9 @@
+# Ignore Gradle project-specific cache directory
+.gradle
+
+# Ignore Gradle build output directory
+build
+
 # IntelliJ IDEA
 .idea/
 out/
@@ -10,4 +16,4 @@ target/
 .DS_Store
 
 # Project specific
-conf/com.example.demo.controllers.LoginController.properties 
+conf/com.example.demo.controllers.LoginController.properties
