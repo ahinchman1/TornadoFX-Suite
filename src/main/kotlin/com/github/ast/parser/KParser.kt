@@ -7,7 +7,12 @@ import tornadofx.*
 import java.util.*
 import kotlin.collections.HashMap
 
-class KParser: Controller() {
+class KParser(
+        // TODO used sealed classes to make view types here interchangable
+        var views: HashMap<String, TornadoFXView> = HashMap(),
+        val componentBreakdownFunction: (String, String, KParser) -> Unit,
+        private vararg val functions: (String, String, String, JsonObject, KParser) -> Unit
+): Controller() {
 
     /**
      * breakdown of classes/files that may have independent functions
@@ -26,9 +31,8 @@ class KParser: Controller() {
     var mapClassViewNodes = HashMap<String, Digraph>()
 
     /**
-     * tfxViews and viewImports are saved for the test generator
+     * viewImports are saved for the test generator
      */
-    var tfxViews = HashMap<String, TornadoFXView>()
     var viewImports = HashMap<String, String>()
 
     /**
@@ -51,7 +55,6 @@ class KParser: Controller() {
         val classProperties = ArrayList<Property>()
         val classMethods = ArrayList<Method>()
         val classParents = ArrayList<String>()
-        val currentTFXView = TornadoFXView()
 
         gson.toJsonTree(file).asJsonObject
 
@@ -59,12 +62,9 @@ class KParser: Controller() {
 
         // collecting this info for test information
         clazz.parents.forEach {
-            val parentClass = gson.toJsonTree(it).asJsonObject.type().getType()
-            classParents.add(parentClass)
-            if (parentClass == "Fragment" || parentClass == "View") {
-                currentTFXView.view = className
-                currentTFXView.type = parentClass
-            }
+            val superClass = gson.toJsonTree(it).asJsonObject.type().getType()
+            classParents.add(superClass)
+            componentBreakdownFunction(superClass, className, this)
         }
 
         // Save for all files
@@ -76,9 +76,6 @@ class KParser: Controller() {
             }
         }
 
-        if (!currentTFXView.type.isNullOrEmpty()) {
-            tfxViews[className] = currentTFXView
-        }
         classes.add(ClassBreakDown(className, classParents, classProperties, classMethods))
     }
 
@@ -322,6 +319,9 @@ class KParser: Controller() {
      *
      * Note: This is the older version of getting properties. Down the road this ought to
      *       be refactored to use the above recursive functions
+     *
+     * Note: Execute vararg functions here to locate views and other view-specific components
+     *        per configurations
      */
     private fun convertToClassProperty(property: Node.Decl.Property,
                                        propList: ArrayList<Property>,
@@ -336,17 +336,8 @@ class KParser: Controller() {
             val isolated = node.vars().getObject(0)
             val isolatedName = isolated.name()
 
-            // TornadoFX-Specific
-            if (isolatedName == "scope") {
-                tfxViews[className]?.scope = node.expr().rhs().ref().getType()
-            }
-
-            // TornadoFX-Specific
-            if (isolatedName == "root") {
-                viewImports[className] = saveViewImport(path)
-                println("DETECTION ORDER")
-                detectLambdaControls(node, className, LinkedList())
-                println("END OF DETECTION ORDER")
+            functions.forEach {
+                it(isolatedName, className, path, node, this)
             }
 
             val classProperty = when {
@@ -358,7 +349,7 @@ class KParser: Controller() {
         }
     }
 
-    private fun saveViewImport(path: String): String {
+    fun saveViewImport(path: String): String {
         return if (path.contains("kotlin/")) {
             path.split("kotlin")[1].replace("/", ".").substring(1)
         } else {
@@ -461,62 +452,12 @@ class KParser: Controller() {
     private fun valOrVar(node: JsonObject): String = if (node.readOnly()) "val " else "var "
 
     /**
-     * TornadoFX specific:
-     *    Detects TornadoFX View component DSLs which builds a digraph representation
+     * Using enum classes to check for control values here
      */
-    private fun detectLambdaControls(node: JsonObject,
-                                     className: String,
-                                     nodeHier: LinkedList<String>,
-                                     nodeLevel: Int = 0) {
-        val root = node.expr()
-
-        if (root.has("lambda")) {
-            val rootName = root.asJsonObject.expr().name()
-            nodeHier.addLast(rootName)
-            println("$nodeLevel - $rootName")
-
-            /**
-             * Create Digraph if the class is new, otherwise, add node to the existing digraph.
-             */
-            val graphNode = UINode(rootName, nodeLevel, root, ArrayList())
-            if (mapClassViewNodes.contains(className)) {
-                mapClassViewNodes[className]?.addNode(graphNode)
-            } else {
-                val digraph = Digraph()
-                digraph.addNode(graphNode)
-                mapClassViewNodes[className] = digraph
-            }
-
-            /**
-             * Add an edge (a child node) to the parent node level if there is a parent
-             */
-            val parentLevel = nodeLevel - 1
-            if (parentLevel >= 0) {
-                // find the parent node by index
-                mapClassViewNodes[className]?.findLastElementWithParentLevel(parentLevel)?.let {
-                    mapClassViewNodes[className]?.addEdge(it, graphNode)
-                }
-            }
-
-            // TornadoFX specific
-            addControls<INPUTS>(graphNode, className)
-
-            // get elements in lambda
-            val lambda = root.asJsonObject.lambda()
-            val elements: JsonArray = lambda.func().block().stmts()
-
-            elements.forEach {
-                detectLambdaControls(it.asJsonObject, className, nodeHier, nodeLevel + 1)
-            }
-        }
-    }
-
-    /**
-     * TornadoFX specific:
-     *    Using enum classes to check for control values here
-     */
-    private inline fun <reified T : Enum<T>> addControls(control: UINode,
-                                                         className: String) {
+    inline fun <reified T : Enum<T>> addControls(
+            control: UINode,
+            className: String
+    ) {
         enumValues<T>().forEach {
             if (control.uiNode.toLowerCase() == (it.name).toLowerCase()) {
                 if (!detectedUIControls.containsKey(className)) {
@@ -528,61 +469,4 @@ class KParser: Controller() {
         }
     }
 
-    private fun JsonObject.getType() = this.pieces().getObject(0).name()
-
-    private fun JsonObject.getCollectionType(num: Int) = this.expr().typeArgs().getObject(num).ref().getType()
-
-    private fun JsonObject.lambda(): JsonObject = this.get("lambda").asJsonObject
-
-    private fun JsonObject.expr(): JsonObject = this.get("expr").asJsonObject
-
-    private fun JsonObject.ref(): JsonObject = this.get("ref").asJsonObject
-
-    private fun JsonObject.type(): JsonObject = this.get("type").asJsonObject
-
-    private fun JsonObject.func(): JsonObject = this.get("func").asJsonObject
-
-    private fun JsonObject.block(): JsonObject = this.get("block").asJsonObject
-
-    private fun JsonObject.stmts(): JsonArray = this.get("stmts").asJsonArray
-
-    private fun JsonArray.getObject(num: Int) = this.get(num).asJsonObject
-
-    private fun JsonObject.vars(): JsonArray = this.get("vars").asJsonArray
-
-    private fun JsonObject.args(): JsonArray = this.get("args").asJsonArray
-
-    private fun JsonObject.typeArgs(): JsonArray = this.get("typeArgs").asJsonArray
-
-    private fun JsonObject.pieces(): JsonArray = this.get("pieces").asJsonArray
-
-    private fun JsonObject.lhs(): JsonObject = this.get("lhs").asJsonObject
-
-    private fun JsonObject.rhs(): JsonObject = this.get("rhs").asJsonObject
-
-    private fun JsonObject.elems(): JsonArray = this.get("elems").asJsonArray
-
-    private fun JsonObject.body(): JsonObject = this.get("body").asJsonObject
-
-    private fun JsonObject.decl(): JsonObject = this.get("decl").asJsonObject
-
-    private fun JsonObject.oper(): JsonObject = this.get("oper").asJsonObject
-
-    private fun JsonObject.params(): JsonArray = this.get("params").asJsonArray
-
-    private fun JsonObject.recv(): JsonObject = this.get("recv").asJsonObject
-
-    // primitives
-
-    private fun JsonObject.token(): String = this.get("token").asString
-
-    private fun JsonObject.readOnly(): Boolean = this.get("readOnly").asBoolean
-
-    private fun JsonObject.delegated(): Boolean = this.get("delegated").asBoolean
-
-    private fun JsonObject.str(): String = this.get("str").asString
-
-    private fun JsonObject.name(): String = this.get("name").asString
-
-    private fun JsonObject.form(): String = this.get("form").asString
 }

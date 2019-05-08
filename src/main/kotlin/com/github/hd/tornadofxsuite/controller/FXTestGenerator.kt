@@ -34,7 +34,7 @@ class FXTestGenerator: Controller() {
                 scanner.viewImports,
                 scanner.mapClassViewNodes,
                 scanner.detectedUIControls,
-                scanner.tfxViews
+                scanner.views
         )
 
         fire(OnParsingComplete(classes))
