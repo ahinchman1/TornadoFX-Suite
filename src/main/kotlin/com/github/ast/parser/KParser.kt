@@ -3,16 +3,15 @@ package com.github.ast.parser
 import com.google.gson.*
 import kastree.ast.Node
 import kastree.ast.psi.Parser
-import tornadofx.*
 import java.util.*
 import kotlin.collections.HashMap
 
 class KParser(
+        val componentBreakdownFunction: (String, String, KParser) -> Unit,
         // TODO used sealed classes to make view types here interchangable
         var views: HashMap<String, TornadoFXView> = HashMap(),
-        val componentBreakdownFunction: (String, String, KParser) -> Unit,
         private vararg val functions: (String, String, String, JsonObject, KParser) -> Unit
-): Controller() {
+) {
 
     /**
      * breakdown of classes/files that may have independent functions

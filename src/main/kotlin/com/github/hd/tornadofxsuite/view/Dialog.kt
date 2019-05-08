@@ -3,6 +3,7 @@ package com.github.hd.tornadofxsuite.view
 import com.github.ast.parser.KParser
 import com.github.hd.tornadofxsuite.app.Styles
 import com.github.hd.tornadofxsuite.controller.FXTestBuilders
+import com.github.hd.tornadofxsuite.controller.FXTestGenerator
 import javafx.scene.control.Button
 import tornadofx.*
 
@@ -10,8 +11,7 @@ class Dialog : Fragment() {
 
     private val view: MainView by inject()
     private val testBuilder: FXTestBuilders by inject()
-    // TODO - still on the background thread, needs to be sent back to the main thread
-    private val scanner: KParser by inject()
+    private val fxTestGenerator: FXTestGenerator by inject()
 
     private lateinit var generateButton: Button
 
@@ -29,8 +29,8 @@ class Dialog : Fragment() {
                     vboxConstraints { marginRight = 5.0 }
 
                     listview<String> {
-                        if (scanner.mapClassViewNodes.size > 0) {
-                            scanner.mapClassViewNodes.forEach { (className, digraph) ->
+                        if (fxTestGenerator.scanner.mapClassViewNodes.size > 0) {
+                            fxTestGenerator.scanner.mapClassViewNodes.forEach { (className, digraph) ->
                                 items.add(className)
                                 digraph.viewNodes.forEach { (bucket, children) ->
                                     val nodeLevel = bucket.level
@@ -56,7 +56,7 @@ class Dialog : Fragment() {
                     vboxConstraints { marginLeft = 5.0 }
 
                     listview<String> {
-                        scanner.detectedUIControls.forEach { view ->
+                        fxTestGenerator.scanner.detectedUIControls.forEach { view ->
                             items.add(view.key)
                             view.value.forEach { input ->
                                 items.add("\t${input.uiNode}")

@@ -52,7 +52,13 @@ fun saveComponentBreakdown(superClass: String, className: String, parser: KParse
  * TornadoFX specific:
  *    Detects TornadoFX Scopes for Views
  */
-fun detectScopes(isolatedName: String, className: String, node: JsonObject, path: String, parser: KParser) {
+fun detectScopes(
+        isolatedName: String,
+        className: String,
+        path: String,
+        node: JsonObject,
+        parser: KParser
+) {
     if (isolatedName == "scope") {
         parser.views[className]?.scope = node.expr().rhs().ref().getType()
     }
@@ -62,7 +68,13 @@ fun detectScopes(isolatedName: String, className: String, node: JsonObject, path
  * TornadoFX specific:
  *    Detects TornadoFX Scopes for Views
  */
-fun detectRoot(isolatedName: String, className: String, node: JsonObject, path: String, parser: KParser) {
+fun detectRoot(
+        isolatedName: String,
+        className: String,
+        path: String,
+        node: JsonObject,
+        parser: KParser
+) {
     if (isolatedName == "root") {
         parser.viewImports[className] = parser.saveViewImport(path)
         println("DETECTION ORDER")

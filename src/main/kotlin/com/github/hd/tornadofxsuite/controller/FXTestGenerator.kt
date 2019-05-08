@@ -14,7 +14,12 @@ class OnParsingComplete(val testClassInfo: ArrayList<TestClassInfo>): FXEvent()
 
 class FXTestGenerator: Controller() {
     private val kotlinFiles = ArrayList<File>()
-    private val scanner: KParser by inject()
+    val scanner = KParser(
+            ::saveComponentBreakdown,
+            HashMap(),
+            ::detectScopes,
+            ::detectRoot
+    )
 
     /**
      * Open every file for AST parsing and send class breakdown for test generation
