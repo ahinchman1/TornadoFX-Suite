@@ -8,6 +8,7 @@ import com.github.hd.tornadofxsuite.controller.PrintFileToConsole
 import javafx.geometry.Pos
 import javafx.scene.control.ListView
 import javafx.scene.layout.HBox
+import javafx.stage.DirectoryChooser
 import javafx.util.Duration
 import tornadofx.*
 import java.io.File
@@ -20,6 +21,7 @@ class MainView : View() {
     val consolePath = System.getProperty("os.name") + " ~ " + System.getProperty("user.name") + ": "
     lateinit var console: ListView<String>
     lateinit var overlay: HBox
+    lateinit var directoryChooser: DirectoryChooser
 
     init {
         subscribe<ReadFilesRequest> { event ->
@@ -58,6 +60,8 @@ class MainView : View() {
                     paddingTop = 10.0
                 }
                 console = listview {
+                    id = "console"
+
                     items.add(consolePath)
                     subscribe<PrintFileToConsole> { event ->
                         writeFileToConsole(event.file, event.textFile)
@@ -66,11 +70,15 @@ class MainView : View() {
             }
 
             button("Upload your project.") {
+                id = "uploadProject"
+
                 setOnAction {
                     overlay.fade(Duration.millis(2000.0), .5)
                     chooseDirectory {
+                        id = "directoryChooser"
                         title = "Choose a TornadoFX Project"
                         initialDirectory = File(System.getProperty("user.home"))
+                        directoryChooser = this
                     }?.let {
                         console.items.clear()
                         console.items.add("SEARCHING FILES...")
