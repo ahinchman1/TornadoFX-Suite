@@ -1,6 +1,6 @@
 package com.github.hd.tornadofxsuite.view
 
-import com.github.ast.parser.TestClassInfo
+import com.github.ast.parser.nodebreakdown.TestClassInfo
 import com.github.hd.tornadofxsuite.app.Styles
 import com.github.hd.tornadofxsuite.controller.FXTestGenerator
 import com.github.hd.tornadofxsuite.controller.OnParsingComplete

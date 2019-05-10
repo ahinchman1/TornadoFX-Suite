@@ -1,6 +1,5 @@
 package com.github.hd.tornadofxsuite.view
 
-import com.github.ast.parser.KParser
 import com.github.hd.tornadofxsuite.app.Styles
 import com.github.hd.tornadofxsuite.controller.FXTestBuilders
 import com.github.hd.tornadofxsuite.controller.FXTestGenerator

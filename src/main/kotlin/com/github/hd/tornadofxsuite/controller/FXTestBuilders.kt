@@ -1,8 +1,8 @@
 package com.github.hd.tornadofxsuite.controller
 
-import com.github.ast.parser.Digraph
-import com.github.ast.parser.TestClassInfo
-import com.github.ast.parser.UINode
+import com.github.ast.parser.nodebreakdown.Digraph
+import com.github.ast.parser.nodebreakdown.TestClassInfo
+import com.github.ast.parser.nodebreakdown.UINode
 import tornadofx.*
 import java.io.File
 import java.util.ArrayList
@@ -10,7 +10,7 @@ import kotlin.random.Random
 
 class FXTestBuilders : Controller() {
 
-    // TODO - may need to refactor with the enums definitions in TornadoFX.kt, enums are redundant
+    // TODO - may need to refactor with the enums definitions in TornadoFX, enums are redundant
     private val controlDictionary = hashMapOf(
             "form" to "Form",
             "textfield" to "TextField",
@@ -211,7 +211,7 @@ class FXTestBuilders : Controller() {
     }
 
     /**
-     * Referencing a node path may be something like root.form.fieldset.textfield and so on
+     * Referencing a node currentPath may be something like root.form.fieldset.textfield and so on
      */
     private fun referenceNode(nodePath: Array<UINode>): String {
         var nodeReference = ""

@@ -43,11 +43,15 @@ dependencies {
 
     compile("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.1")
     compile("org.jetbrains.kotlinx:kotlinx-coroutines-javafx:1.1.1")
-
-    compile("org.testfx:testfx-core:4.0.13-alpha")
-    compile("org.testfx:testfx-junit:4.0.13-alpha")
     
     compile("io.github.microutils:kotlin-logging:1.4.4")
+
+    testCompile("org.testfx:testfx-core:4.0.13-alpha")
+    testCompile("org.testfx:testfx-junit:4.0.13-alpha")
+    testCompile("org.mockito:mockito-core:1.10.19")
+    testCompile("com.nhaarman.mockito-kotlin:2.1.0") {
+        exclude("exclude group: 'org.mockito'")
+    }
 }
 
 application {

@@ -68,7 +68,7 @@ class MainViewTest: ApplicationTest() {
 
         if (directoryDialog != null &&
                 (DirectoryChooser::class).isInstance(directoryDialog)) {
-            // assertEquals((directoryDialog as DirectoryChooser).title, "Choose a TornadoFX Project")
+            assertEquals((directoryDialog as DirectoryChooser).title, "Choose a TornadoFX Project")
         }
 
         // assertEquals((directoryDialog as DirectoryChooser).title, "Choose a TornadoFX Project")
