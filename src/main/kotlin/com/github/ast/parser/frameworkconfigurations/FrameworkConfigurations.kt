@@ -3,7 +3,6 @@ package com.github.ast.parser.frameworkconfigurations
 import com.github.ast.parser.KParserImpl
 import com.google.gson.JsonObject
 
-// TODO - make these type alias more generalized
 typealias ComponentBreakdownFunction = KParserImpl.(String, String) -> Unit
 
 typealias DetectFrameworkComponents = KParserImpl.(String, String, JsonObject) -> Unit

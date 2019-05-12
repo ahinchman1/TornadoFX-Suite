@@ -17,8 +17,10 @@ class ReadFilesRequest(val file: File) : FXEvent(EventBus.RunOn.BackgroundThread
 
 class MainView : View() {
     private val testGenerator: FXTestGenerator by inject()
+    private val consolePath = System.getProperty("os.name") + " ~ " + System.getProperty("user.name") + ": "
+
     val classesTestInfo = ArrayList<TestClassInfo>()
-    val consolePath = System.getProperty("os.name") + " ~ " + System.getProperty("user.name") + ": "
+
     lateinit var console: ListView<String>
     lateinit var overlay: HBox
     lateinit var directoryChooser: DirectoryChooser
@@ -101,10 +103,12 @@ class MainView : View() {
     }
 
     private fun writeFileToConsole(file: String, fileText: String) {
-        console.items.add(consolePath + file)
-        console.items.add("READING FILES...")
-        console.items.add(fileText)
-        console.items.add("===================================================================")
+        console.items.apply{
+            add(consolePath + file)
+            add("READING FILES...")
+            add(fileText)
+            add("===================================================================")
+        }
     }
 
     private fun askUserDialog() {

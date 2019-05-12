@@ -9,6 +9,7 @@ import java.time.Instant
 
 open class TornadoFxTest : ApplicationTest() {
     lateinit var wrapper: TestView
+
     override fun start(stage: Stage) {
         wrapper = TestView()
         val scene = Scene(wrapper.root, 800.0, 600.0)
