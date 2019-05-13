@@ -47,7 +47,7 @@ dependencies {
     testCompile("org.testfx:testfx-junit:4.0.13-alpha")
 
     testCompile("org.mockito:mockito-core:1.10.19")
-    testCompile("com.nhaarman.mockito-kotlin:2.1.0") {
+    testCompile("com.nhaarman.mockitokotlin2:mockito-kotlin:2.1.0") {
         exclude("exclude group: 'org.mockito'")
     }
 }

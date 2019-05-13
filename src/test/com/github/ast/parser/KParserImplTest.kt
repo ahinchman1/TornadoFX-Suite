@@ -4,7 +4,6 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import kastree.ast.psi.Parser
 import mu.KotlinLogging
-import org.jetbrains.kotlin.compilerRunner.KotlinLogger
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.junit.MockitoJUnit
