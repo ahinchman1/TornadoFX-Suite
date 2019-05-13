@@ -17,7 +17,7 @@ class ReadFilesRequest(val file: File) : FXEvent(EventBus.RunOn.BackgroundThread
 
 class MainView : View() {
     private val testGenerator: FXTestGenerator by inject()
-    private val consolePath = System.getProperty("os.name") + " ~ " + System.getProperty("user.name") + ": "
+    val consolePath = System.getProperty("os.name") + " ~ " + System.getProperty("user.name") + ": "
 
     val classesTestInfo = ArrayList<TestClassInfo>()
 
