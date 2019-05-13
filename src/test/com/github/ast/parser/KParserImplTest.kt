@@ -1,11 +1,16 @@
 package com.github.ast.parser
 
+import com.github.ast.parser.frameworkconfigurations.ComponentBreakdownFunction
+import com.github.ast.parser.frameworkconfigurations.DetectFrameworkComponents
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import kastree.ast.psi.Parser
 import mu.KotlinLogging
 import org.junit.Rule
 import org.junit.Test
+import org.mockito.InjectMocks
+import org.mockito.Mock
+import org.mockito.Mockito.verify
 import org.mockito.junit.MockitoJUnit
 import org.mockito.junit.MockitoRule
 
@@ -13,9 +18,33 @@ class KParserImplTest {
     @get: Rule
     var rule: MockitoRule = MockitoJUnit.rule()
 
+    @Mock
+    private lateinit var breakdownComponentFunction: ComponentBreakdownFunction
+
+    @Mock
+    private lateinit var functions: DetectFrameworkComponents
+
+    @Mock
+    private lateinit var parserService: KParser
+
     private val gson = Gson()
 
-    private fun setup(kotlinFile: String): JsonObject {
+    @InjectMocks
+    private lateinit var parser: KParserImpl
+
+    @Before
+    private fun  setup() {
+        val currentPath = "some.path.demo"
+
+        parser = KParserImpl(
+                currentPath,
+                breakdownComponentFunction,
+                HashMap(),
+                functions
+        )
+    }
+
+    private fun parseAST(kotlinFile: String): JsonObject {
         val file = Parser.parseFile(kotlinFile, true)
         return gson.toJsonTree(file).asJsonObject
     }
@@ -26,7 +55,18 @@ class KParserImplTest {
 
     @Test
     fun `Method body is a block function`() {
+        val function = parseAST(
+                """
+                    fun bar() : String {
+                        // Print hello
+                        println("Hello, World!")
+                    }
+                """.trimIndent()
+        )
+        val stmts = arrayListOf<String>()
 
+        parser.breakdownBody(function, stmts)
+        verify(parserService).breakdownStmts(function.block().stmts(), stmts)
     }
 
     @Test
@@ -69,28 +109,28 @@ class KParserImplTest {
 
     @Test
     fun `Declaration is empty`() {
-        val node = setup("var p = Person()")
+        val node = parseAST("var p = Person()")
 
         println(node)
     }
 
     @Test
     fun `Declaration is a simple member property`() {
-        val node = setup("var p = Person()")
+        val node = parseAST("var p = Person()")
 
         println(node)
     }
 
     @Test
     fun `Declaration is a complex member property`() {
-        val node = setup("var p = Person()")
+        val node = parseAST("var p = Person()")
 
         println(node)
     }
 
     @Test
     fun `Declaration is an anonymous function`() {
-        val node = setup("var p = Person()")
+        val node = parseAST("var p = Person()")
 
         println(node)
     }
