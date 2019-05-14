@@ -25,12 +25,6 @@ dependencies {
     // Use the Kotlin JDK 8 standard library.
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 
-    // Use the Kotlin test library.
-    testImplementation("org.jetbrains.kotlin:kotlin-test")
-
-    // Use the Kotlin JUnit integration.
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
-
     compile("no.tornado:tornadofx:$tornadofx_version")
 
     compile("com.google.code.gson:gson:2.8.5")
@@ -43,11 +37,19 @@ dependencies {
 
     compile("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.1")
     compile("org.jetbrains.kotlinx:kotlinx-coroutines-javafx:1.1.1")
-
-    compile("org.testfx:testfx-core:4.0.13-alpha")
-    compile("org.testfx:testfx-junit:4.0.13-alpha")
     
-    compile("io.github.microutils:kotlin-logging:1.4.4")
+    testCompile("io.github.microutils:kotlin-logging:1.4.4")
+
+    testCompile("org.jetbrains.kotlin:kotlin-test")
+    testCompile("org.jetbrains.kotlin:kotlin-test-junit")
+
+    testCompile("org.testfx:testfx-core:4.0.13-alpha")
+    testCompile("org.testfx:testfx-junit:4.0.13-alpha")
+
+    testCompile("org.mockito:mockito-core:1.10.19")
+    testCompile("com.nhaarman.mockitokotlin2:mockito-kotlin:2.1.0") {
+        exclude("exclude group: 'org.mockito'")
+    }
 }
 
 application {

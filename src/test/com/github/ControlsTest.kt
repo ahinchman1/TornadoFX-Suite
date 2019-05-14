@@ -1,7 +1,5 @@
-package com.github.hd.tornadofxsuite
+package com.github
 
-import com.github.hd.tornadofxsuite.view.MainView
-import javafx.beans.property.SimpleDoubleProperty
 import javafx.beans.property.SimpleIntegerProperty
 import javafx.beans.property.SimpleStringProperty
 import javafx.embed.swing.JFXPanel
@@ -11,7 +9,6 @@ import javafx.util.converter.NumberStringConverter
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
-import org.testfx.api.FxAssert.verifyThat
 import org.testfx.api.FxToolkit
 import tornadofx.*
 import java.text.NumberFormat

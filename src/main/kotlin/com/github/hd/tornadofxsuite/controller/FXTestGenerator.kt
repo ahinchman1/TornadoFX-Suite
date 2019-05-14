@@ -1,6 +1,14 @@
 package com.github.hd.tornadofxsuite.controller
 
 import com.github.ast.parser.*
+import com.github.ast.parser.frameworkconfigurations.TornadoFXView
+import com.github.ast.parser.frameworkconfigurations.detectRoot
+import com.github.ast.parser.frameworkconfigurations.detectScopes
+import com.github.ast.parser.frameworkconfigurations.saveComponentBreakdown
+import com.github.ast.parser.nodebreakdown.Digraph
+import com.github.ast.parser.nodebreakdown.Method
+import com.github.ast.parser.nodebreakdown.TestClassInfo
+import com.github.ast.parser.nodebreakdown.UINode
 import tornadofx.*
 import java.io.BufferedReader
 import java.io.File
@@ -14,7 +22,13 @@ class OnParsingComplete(val testClassInfo: ArrayList<TestClassInfo>): FXEvent()
 
 class FXTestGenerator: Controller() {
     private val kotlinFiles = ArrayList<File>()
-    private val scanner: KParser by inject()
+    var scanner = KParserImpl(
+            "",
+            KParserImpl::saveComponentBreakdown,
+            HashMap(),
+            KParserImpl::detectScopes,
+            KParserImpl::detectRoot
+    )
 
     /**
      * Open every file for AST parsing and send class breakdown for test generation
@@ -22,9 +36,11 @@ class FXTestGenerator: Controller() {
     fun walk(path: String) {
         Files.walk(Paths.get(path)).use { allFiles ->
             allFiles.filter { path -> path.toString().endsWith(".kt") }
-                    .forEach {path ->
+                    .forEach { path ->
+                        scanner.currentPath = path.toUri().path
+
                         val file = File(path.toUri())
-                        readFiles(file, path.toUri().path)
+                        readFiles(file)
                     }
         }
         consoleLogViewHierarchy()
@@ -34,7 +50,7 @@ class FXTestGenerator: Controller() {
                 scanner.viewImports,
                 scanner.mapClassViewNodes,
                 scanner.detectedUIControls,
-                scanner.tfxViews
+                scanner.views
         )
 
         fire(OnParsingComplete(classes))
@@ -43,14 +59,14 @@ class FXTestGenerator: Controller() {
     /**
      * Read file and start analyzing file with AST parsing
      */
-    private fun readFiles(file: File, path: String) {
+    private fun readFiles(file: File) {
         val fileText = file.bufferedReader().use(BufferedReader::readText)
 
 
         if (filterFiles(fileText)) {
             kotlinFiles.add(file)
             fire(PrintFileToConsole(file.toString(), fileText))
-            scanner.parseAST(fileText, path)
+            scanner.parseAST(fileText)
         }
     }
 

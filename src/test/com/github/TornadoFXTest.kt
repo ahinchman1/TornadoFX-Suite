@@ -1,4 +1,4 @@
-package com.github.hd.tornadofxsuite
+package com.github
 
 import javafx.application.Platform
 import javafx.scene.Scene
@@ -9,6 +9,7 @@ import java.time.Instant
 
 open class TornadoFxTest : ApplicationTest() {
     lateinit var wrapper: TestView
+
     override fun start(stage: Stage) {
         wrapper = TestView()
         val scene = Scene(wrapper.root, 800.0, 600.0)

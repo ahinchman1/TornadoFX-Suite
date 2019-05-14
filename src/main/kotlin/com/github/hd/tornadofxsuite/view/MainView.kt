@@ -1,6 +1,6 @@
 package com.github.hd.tornadofxsuite.view
 
-import com.github.ast.parser.TestClassInfo
+import com.github.ast.parser.nodebreakdown.TestClassInfo
 import com.github.hd.tornadofxsuite.app.Styles
 import com.github.hd.tornadofxsuite.controller.FXTestGenerator
 import com.github.hd.tornadofxsuite.controller.OnParsingComplete
@@ -8,6 +8,7 @@ import com.github.hd.tornadofxsuite.controller.PrintFileToConsole
 import javafx.geometry.Pos
 import javafx.scene.control.ListView
 import javafx.scene.layout.HBox
+import javafx.stage.DirectoryChooser
 import javafx.util.Duration
 import tornadofx.*
 import java.io.File
@@ -16,10 +17,13 @@ class ReadFilesRequest(val file: File) : FXEvent(EventBus.RunOn.BackgroundThread
 
 class MainView : View() {
     private val testGenerator: FXTestGenerator by inject()
-    val classesTestInfo = ArrayList<TestClassInfo>()
     val consolePath = System.getProperty("os.name") + " ~ " + System.getProperty("user.name") + ": "
+
+    val classesTestInfo = ArrayList<TestClassInfo>()
+
     lateinit var console: ListView<String>
     lateinit var overlay: HBox
+    lateinit var directoryChooser: DirectoryChooser
 
     init {
         subscribe<ReadFilesRequest> { event ->
@@ -58,6 +62,8 @@ class MainView : View() {
                     paddingTop = 10.0
                 }
                 console = listview {
+                    id = "console"
+
                     items.add(consolePath)
                     subscribe<PrintFileToConsole> { event ->
                         writeFileToConsole(event.file, event.textFile)
@@ -66,11 +72,15 @@ class MainView : View() {
             }
 
             button("Upload your project.") {
+                id = "uploadProject"
+
                 setOnAction {
                     overlay.fade(Duration.millis(2000.0), .5)
                     chooseDirectory {
+                        id = "directoryChooser"
                         title = "Choose a TornadoFX Project"
                         initialDirectory = File(System.getProperty("user.home"))
+                        directoryChooser = this
                     }?.let {
                         console.items.clear()
                         console.items.add("SEARCHING FILES...")
@@ -93,10 +103,12 @@ class MainView : View() {
     }
 
     private fun writeFileToConsole(file: String, fileText: String) {
-        console.items.add(consolePath + file)
-        console.items.add("READING FILES...")
-        console.items.add(fileText)
-        console.items.add("===================================================================")
+        console.items.apply{
+            add(consolePath + file)
+            add("READING FILES...")
+            add(fileText)
+            add("===================================================================")
+        }
     }
 
     private fun askUserDialog() {

@@ -1,43 +1,18 @@
-package com.github.ast.parser
+package com.github.ast.parser.nodebreakdown
 
 import com.google.gson.JsonObject
 import java.util.*
 
-data class ClassBreakDown(val className: String,
-                          val classParent: ArrayList<String>,
-                          val classProperties: ArrayList<Property>,
-                          val classMethods: ArrayList<Method>)
-
-data class Property(val valOrVar: String,
-                    val propertyName: String,
-                    val propertyType: String)
-
-data class Method(val name: String,
-                  val parameters: ArrayList<Property>,
-                  val returnType: String = "Unit",
-                  val methodStatements: ArrayList<String>,
-                  val viewNodesAffected: ArrayList<String>)
-
-data class TestClassInfo(val className: String,
-                         val viewImport: String,
-                         val detectedUIControls: ArrayList<UINode>,
-                         val mappedViewNodes: Digraph,
-                         val tfxView: TornadoFXView) {
-    fun getNodeChildren(node: UINode): HashSet<UINode> = mappedViewNodes.getChildren(node)
-}
-
-data class UINode(val uiNode: String,
-                  val level: Int,
-                  val nodeTree: JsonObject, // how to identify the nodeTree
-                  val associatedFunctions: ArrayList<String>)
-
+/**
+ * Marks nodes during traversal of [Digraph] searches
+ */
 enum class VisitStatus {
     UNVISITED, VISITING, VISITED
 }
 
 
 /**
- * Store view hierarchy tree here
+ * Store view hierarchy in the form of a directed graph
  */
 class Digraph {
 
@@ -172,7 +147,7 @@ class Digraph {
      * don't worry about it
      **/
     private fun getDirectPath(nodeLevel: Int, trace: Queue<UINode>): Array<UINode> {
-        val nodePath = Array(nodeLevel + 1) {  UINode("", 0, JsonObject(), ArrayList()) }
+        val nodePath = Array(nodeLevel + 1) { UINode("", 0, JsonObject(), ArrayList()) }
 
         trace.iterator().forEach { node ->
             if (node.level <= nodeLevel) {
@@ -203,13 +178,3 @@ class Digraph {
         return lastNode
     }
 }
-
-
-
-
-
-
-
-
-
-
