@@ -4,11 +4,12 @@ import com.github.ast.parser.frameworkconfigurations.ComponentBreakdownFunction
 import com.github.ast.parser.frameworkconfigurations.DetectFrameworkComponents
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import com.nhaarman.mockitokotlin2.spy
 import kastree.ast.psi.Parser
 import mu.KotlinLogging
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.junit.MockitoJUnit
@@ -24,24 +25,20 @@ class KParserImplTest {
     @Mock
     private lateinit var functions: DetectFrameworkComponents
 
-    @Mock
-    private lateinit var parserService: KParser
+    private lateinit var parser: KParserImpl
 
     private val gson = Gson()
 
-    @InjectMocks
-    private lateinit var parser: KParserImpl
-
     @Before
-    private fun  setup() {
+    fun  setup() {
         val currentPath = "some.path.demo"
 
-        parser = KParserImpl(
+        parser = spy(KParserImpl(
                 currentPath,
                 breakdownComponentFunction,
                 HashMap(),
                 functions
-        )
+        ))
     }
 
     private fun parseAST(kotlinFile: String): JsonObject {
@@ -64,9 +61,10 @@ class KParserImplTest {
                 """.trimIndent()
         )
         val stmts = arrayListOf<String>()
+        val body = function.decls().getObject(0).body()
 
-        parser.breakdownBody(function, stmts)
-        verify(parserService).breakdownStmts(function.block().stmts(), stmts)
+        parser.breakdownBody(body, stmts)
+        verify(parser).breakdownStmts(body.block().stmts(), stmts)
     }
 
     @Test

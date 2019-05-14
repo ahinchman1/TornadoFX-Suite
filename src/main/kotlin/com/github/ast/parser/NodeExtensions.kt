@@ -41,6 +41,8 @@ fun JsonObject.body(): JsonObject = this.get("body").asJsonObject
 
 fun JsonObject.decl(): JsonObject = this.get("decl").asJsonObject
 
+fun JsonObject.decls(): JsonArray = this.get("decls").asJsonArray
+
 fun JsonObject.oper(): JsonObject = this.get("oper").asJsonObject
 
 fun JsonObject.params(): JsonArray = this.get("params").asJsonArray

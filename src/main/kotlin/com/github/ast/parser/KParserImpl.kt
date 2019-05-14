@@ -7,6 +7,7 @@ import com.github.ast.parser.nodebreakdown.*
 import com.google.gson.*
 import kastree.ast.Node
 import kastree.ast.psi.Parser
+import org.jetbrains.kotlin.javax.inject.Inject
 import java.util.*
 import kotlin.collections.HashMap
 
