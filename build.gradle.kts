@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     id("org.jetbrains.kotlin.jvm").version("1.3.31")
     id("com.github.johnrengelman.shadow").version("4.0.2")
+    id("com.gradle.build-scan").version("2.1")
     application
 }
 
@@ -50,8 +51,16 @@ dependencies {
     testCompile("com.nhaarman.mockitokotlin2:mockito-kotlin:2.1.0") {
         exclude("exclude group: 'org.mockito'")
     }
+
+    // Use Monocle for headless testfx
+    testCompile("org.testfx:openjfx-monocle:8u76-b04")
 }
 
 application {
-  mainClassName = "com.github.hd.tornadofxsuite.app.TornadoFXSuite"
+    mainClassName = "com.github.hd.tornadofxsuite.app.TornadoFXSuite"
+}
+
+buildScan {
+    termsOfServiceUrl = "https://gradle.com/terms-of-service"
+    termsOfServiceAgree = "yes"
 }
