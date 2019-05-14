@@ -7,7 +7,6 @@ import com.github.ast.parser.nodebreakdown.*
 import com.google.gson.*
 import kastree.ast.Node
 import kastree.ast.psi.Parser
-import org.jetbrains.kotlin.javax.inject.Inject
 import java.util.*
 import kotlin.collections.HashMap
 
@@ -30,6 +29,8 @@ open class KParserImpl(
     override var viewImports = MapKClassTo<String>()
 
     override val gson = Gson()
+
+    var utils = KParserUtils()
 
     override fun parseAST(textFile: String) {
         val file = Parser.parseFile(textFile, true)
@@ -161,7 +162,7 @@ open class KParserImpl(
             decl.expr().has("value") -> Property(
                     valOrVar(decl),
                     isolatedName,
-                    getPrimitiveType(decl.expr()))
+                    utils.getPrimitiveType(decl.expr()))
             else -> TODO()
         }
         val declaration = "$buildStmt${property.valOrVar} $isolatedName: ${property.propertyType}"
@@ -182,7 +183,7 @@ open class KParserImpl(
             expr.has("expr") -> breakdownExpr(expr.expr(), buildStmt)
             expr.has("elems") -> getElems(expr.elems(), buildStmt)
             expr.has("params") -> getParams(expr.params(), buildStmt)
-            expr.has("value") -> buildStmt + getPrimitiveValue(expr)
+            expr.has("value") -> buildStmt + utils.getPrimitiveValue(expr)
             expr.has("block") -> breakdownStmts(expr.block().stmts(), methodStatements)
             expr.size() == 0 -> {}
             else -> println(expr)
@@ -206,7 +207,7 @@ open class KParserImpl(
                 buildElems += when {
                     elem.has("str") -> elem.str()
                     elem.has("expr") -> breakdownExpr(elem, buildElems)
-                    elem.has("value") -> getPrimitiveValue(elem)
+                    elem.has("value") -> utils.getPrimitiveValue(elem)
                     elem.has("lhs") &&
                             elem.has("oper") &&
                             elem.has("rhs") -> breakdownBinaryOperation(elem, buildElems)
@@ -233,65 +234,11 @@ open class KParserImpl(
         return buildArgs
     }
 
-    override fun getPrimitiveValue(value: JsonObject): String {
-        val gValue = value.get("value")
-        return when (value.get("form").asJsonPrimitive.toString()) {
-            "\"BOOLEAN\"" ->  gValue.asBoolean.toString()
-            "\"BYTE\"" -> gValue.asByte.toString()
-            "\"CHAR\"" -> gValue.asCharacter.toString()
-            "\"DOUBLE\"" -> gValue.asDouble.toString()
-            "\"FLOAT\"" -> gValue.asFloat.toString()
-            "\"INT\"" -> gValue.asInt.toString()
-            "\"NULL\"" -> "null"
-            else -> "Unrecognized value type"
-        }
-    }
-
-    // TODO rewrite to accept 2 types for primitive
-    override fun getPrimitiveType(form: JsonObject): String {
-        return when (form.get("form").asJsonPrimitive.toString()) {
-            "\"BOOLEAN\"" -> "Boolean"
-            "\"BYTE\"" -> "Byte"
-            "\"CHAR\"" -> "Char"
-            "\"DOUBLE\"" -> "Double"
-            "\"FLOAT\"" -> "Float"
-            "\"INT\"" -> "Int"
-            "\"NULL\"" -> "null"
-            else -> "Unrecognized value type" // object type probs
-        }
-    }
-
-    override fun getPrimitiveType(form: String): String {
-        return when (form) {
-            "\"BOOLEAN\"" -> "Boolean"
-            "\"BYTE\"" -> "Byte"
-            "\"CHAR\"" -> "Char"
-            "\"DOUBLE\"" -> "Double"
-            "\"FLOAT\"" -> "Float"
-            "\"INT\"" -> "Int"
-            "\"NULL\"" -> "null"
-            else -> "Unrecognized value type" // object type probs
-        }
-    }
-
-    override fun getToken(token: String): String {
-        return when (token) {
-            "DOT" -> "."
-            "ASSN" -> " = "
-            "NEQ" -> " != "
-            "NEG" -> "-"
-            "EQ" -> " == "
-            "RANGE" -> " .. "
-            "AS" -> " as "
-            else -> token
-        }
-    }
-
     override fun breakdownBinaryOperation(expr: JsonObject, buildStmt: String): String {
         val oper = expr.oper()
         val operator = when {
             oper.has("str")  -> oper.str()
-            oper.has("token") -> getToken(oper.token())
+            oper.has("token") -> utils.getToken(oper.token())
             else -> "{$oper}"
         }
 
@@ -385,7 +332,7 @@ open class KParserImpl(
         when {
             // primitive property
             node.expr().expr().has("form") -> {
-                isolatedType = getPrimitiveType(node.expr().expr().form())
+                isolatedType = utils.getPrimitiveType(node.expr().expr().form())
             }
             // collection property
             node.expr().expr().has("name") -> {

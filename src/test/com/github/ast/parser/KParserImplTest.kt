@@ -4,6 +4,7 @@ import com.github.ast.parser.frameworkconfigurations.ComponentBreakdownFunction
 import com.github.ast.parser.frameworkconfigurations.DetectFrameworkComponents
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.spy
 import kastree.ast.psi.Parser
 import mu.KotlinLogging
@@ -14,6 +15,7 @@ import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.junit.MockitoJUnit
 import org.mockito.junit.MockitoRule
+import kotlin.test.assertEquals
 
 class KParserImplTest {
     @get: Rule
@@ -69,7 +71,19 @@ class KParserImplTest {
 
     @Test
     fun `Method body is an expression`() {
+        val function = parseAST(
+                """
+                    override fun onHeader(text:Text) = runLater {
+                        textarea.appendText("\tpart of header. skip\n")
+	                }
+                """.trimIndent()
+        )
+        val stmts = arrayListOf<String>()
+        val body = function.decls().getObject(0).body()
 
+        parser.breakdownBody(body, stmts)
+        assertEquals(stmts.size, 1)
+        verify(parser).breakdownExpr(body.expr(), "")
     }
 
     @Test
@@ -306,17 +320,6 @@ class KParserImplTest {
                 val catScheduleScope = CatScheduleScope()
                 catScheduleScope.model.item = catSchedule
                 find(Editor::class, scope = catScheduleScope).openModal()
-            }
-        """.trimIndent()
-    }
-
-    private fun function() : String {
-        return """
-            package foo
-
-            fun bar() : String {
-                // Print hello
-                println("Hello, World!")
             }
         """.trimIndent()
     }

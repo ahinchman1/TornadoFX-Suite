@@ -203,39 +203,6 @@ interface KParser {
     fun getArguments(arguments: JsonArray, buildStmt: String): String
 
     /**
-     * @param value: [JsonObject] -> node arguments
-     *
-     * @return [String], continued statement building for method content
-     */
-    fun getPrimitiveValue(value: JsonObject): String
-
-    /**
-     * TODO consolidate both getPrimitiveTypes
-     * @param form: [JsonObject] -> node form
-     *
-     * @return [String], continued statement building for method content
-     */
-    fun getPrimitiveType(form: JsonObject): String
-
-    /**
-     * TODO consolidate both getPrimitiveTypes
-     * @param form: [String] -> node form value
-     *
-     * @return [String], continued statement building for method content
-     */
-    fun getPrimitiveType(form: String): String
-
-    /**
-     * Accounts for operations such as
-     *      | . | = | != | - | == | .. | as |
-     *
-     * @param token: [String] -> node form value
-     *
-     * @return [String], continued statement building for method content
-     */
-    fun getToken(token: String): String
-
-    /**
      * Breakdowns all ${left-hand}.${right-hand] operations as needed.
      *
      * @param expr: [String] -> used to grab lhs(), the operation, and rhs()
