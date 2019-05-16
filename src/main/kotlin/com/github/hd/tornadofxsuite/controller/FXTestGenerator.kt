@@ -21,6 +21,9 @@ class PrintFileToConsole(val file: String, val textFile: String): FXEvent()
 class OnParsingComplete(val testClassInfo: ArrayList<TestClassInfo>): FXEvent()
 
 class FXTestGenerator: Controller() {
+
+    lateinit var filePath: String
+
     private val kotlinFiles = ArrayList<File>()
     var scanner = KParserImpl(
             "",
@@ -34,6 +37,8 @@ class FXTestGenerator: Controller() {
      * Open every file for AST parsing and send class breakdown for test generation
      */
     fun walk(path: String) {
+        filePath = path
+
         Files.walk(Paths.get(path)).use { allFiles ->
             allFiles.filter { path -> path.toString().endsWith(".kt") }
                     .forEach { path ->

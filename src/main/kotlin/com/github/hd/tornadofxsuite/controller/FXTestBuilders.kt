@@ -5,10 +5,14 @@ import com.github.ast.parser.nodebreakdown.TestClassInfo
 import com.github.ast.parser.nodebreakdown.UINode
 import tornadofx.*
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.ArrayList
 import kotlin.random.Random
 
 class FXTestBuilders : Controller() {
+
+    private val testGen: FXTestGenerator by inject()
 
     // TODO - may need to refactor with the enums definitions in TornadoFX, enums are redundant
     private val controlDictionary = hashMapOf(
@@ -117,8 +121,17 @@ class FXTestBuilders : Controller() {
 
         file += "\n}"
 
-        File("${classInfo.className}Test.kt")
-                .printWriter().use {out -> out.println(file)}
+        writeAndMoveToProject(classInfo.className, file)
+    }
+
+    private fun writeAndMoveToProject(className: String, file: String) {
+        val testDir = "${testGen.filePath}/src/test"
+        val testDirectory = File(testDir)
+
+        if (Files.notExists(Paths.get(testDir))) testDirectory.mkdirs()
+
+        File(testDirectory, "${className}Test.kt")
+                    .printWriter().use { out -> out.println(file) }
     }
 
     /**
@@ -162,7 +175,7 @@ class FXTestBuilders : Controller() {
             setup += "\n\t\t\t$id${controlDictionary[node.uiNode]} = from(view.root).lookup(#$id).query()"
         }
 
-        setup += "\t\t}\n\t}\n"
+        setup += "\n\t\t}\n\t}\n\n"
 
         return setup
     }
@@ -277,7 +290,7 @@ class FXTestBuilders : Controller() {
     ) = "\n\t@Test" +
             "\n\tfun test$nodeId${controlDictionary[node.uiNode]}() {" +
             "\n${performIndividualAction(node, nodeId)}\n" +
-            "\t}"
+            "\t}\n"
 
     /**
      * TestFX interacts with individual UI Node
@@ -333,13 +346,15 @@ class FXTestBuilders : Controller() {
             nodeId: String
     ) = "\t\tclickOn($nodeId${controlDictionary[node.uiNode]})"
 
-    private fun randomString() = (1..STRING_LENGTH)
-            .map { Random.nextInt(0, charPool.size) }
-            .map(charPool::get)
-            .joinToString("")
+    private fun randomString() = firstLetter[Random.nextInt(0, firstLetter.size)] +
+            (1..STRING_LENGTH)
+                    .map { Random.nextInt(0, charPool.size) }
+                    .map(charPool::get)
+                    .joinToString("")
 
     companion object {
-        const val STRING_LENGTH = 7
+        val firstLetter = ('a'..'z').toList().toTypedArray()
+        const val STRING_LENGTH = 6
         val charPool = ('0'..'z').toList().toTypedArray().filter(Char::isLetterOrDigit)
     }
 
