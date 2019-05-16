@@ -71,10 +71,9 @@ open class KParserImpl(
 
     override fun breakdownClassMethod(method: Node.Decl.Func, classMethods: ArrayList<Method>) {
         val methodJson = gson.toJsonTree(method).asJsonObject
-        val methodStatements = ArrayList<String>()
-        val methodContent = methodJson.body()
+        val methodContent = ArrayList<String>()
 
-        breakdownBody(methodJson.body(), methodStatements)
+        breakdownBody(methodJson.body(), methodContent)
 
         val parameters = ArrayList<Property>()
         methodJson.params().forEach { parameter ->
@@ -99,7 +98,7 @@ open class KParserImpl(
                         name = methodJson.name(),
                         parameters = parameters,
                         returnType = returnType,
-                        methodStatements = methodStatements,
+                        methodStatements = methodContent,
                         viewNodesAffected = ArrayList()
                 )
         )
@@ -141,8 +140,13 @@ open class KParserImpl(
     override fun breakdownDeclProperty(decl: JsonObject, buildStmt: String): String {
         val isolated = decl.vars().getObject(0)
         val isolatedName = isolated.name()
+        var expression = breakdownExpr(decl.expr(), "")
         val property = when {
             decl.expr().has("expr") -> {
+                if (decl.expr().has("args")) {
+                    expression = getArguments(decl.expr().args(), expression)
+                }
+
                 if (decl.expr().has("expr") && decl.expr().has("oper")) {
                     Property(valOrVar(decl), isolatedName, decl.vars().getObject(0).type().ref().pieces().getObject(0).name())
                 } else {
@@ -166,7 +170,8 @@ open class KParserImpl(
             else -> TODO()
         }
         val declaration = "$buildStmt${property.valOrVar} $isolatedName: ${property.propertyType}"
-        return "$declaration = ${breakdownExpr(decl, buildStmt)}"
+
+        return "$declaration = $expression"
     }
 
     override fun breakdownExpr(
@@ -174,21 +179,22 @@ open class KParserImpl(
             buildStmt: String,
             methodStatements: ArrayList<String>?
     ): String {
-        when {
+        var exprStmt = buildStmt
+        exprStmt += when {
             expr.has("lhs") &&
                     expr.has("oper") &&
-                    expr.has("rhs")-> breakdownBinaryOperation(expr, buildStmt)
-            expr.has("args") -> getArguments(expr.args(), buildStmt)
-            expr.has("name") -> buildStmt + expr.name()
-            expr.has("expr") -> breakdownExpr(expr.expr(), buildStmt)
-            expr.has("elems") -> getElems(expr.elems(), buildStmt)
-            expr.has("params") -> getParams(expr.params(), buildStmt)
-            expr.has("value") -> buildStmt + utils.getPrimitiveValue(expr)
+                    expr.has("rhs")-> breakdownBinaryOperation(expr, exprStmt)
+            expr.has("args") -> getArguments(expr.args(), exprStmt)
+            expr.has("name") -> exprStmt + expr.name()
+            expr.has("expr") -> breakdownExpr(expr.expr(), exprStmt)
+            expr.has("elems") -> getElems(expr.elems(), exprStmt)
+            expr.has("params") -> getParams(expr.params(), exprStmt)
+            expr.has("value") -> exprStmt + utils.getPrimitiveValue(expr)
             expr.has("block") -> breakdownStmts(expr.block().stmts(), methodStatements)
             expr.size() == 0 -> {}
             else -> println(expr)
         }
-        return buildStmt
+        return exprStmt
     }
 
     override fun getParams(params: JsonArray, buildStmt: String): String {
@@ -224,17 +230,42 @@ open class KParserImpl(
         var buildArgs = "$buildStmt("
         if (arguments.size() > 0) {
             arguments.forEachIndexed { index, argument ->
+                val arg = argument.asJsonObject
                 val argExpression = argument.asJsonObject.expr()
-                if (argExpression.has("elems")) {
-                    buildArgs += getElems(argExpression.elems(), buildArgs)
+
+                buildArgs += when {
+                    argExpression.has("name") -> argExpression.name()
+                    argExpression.has("recv") -> argExpression.recv().type().getType() + "::class"
+                    argExpression.has("elems") -> getElems(argExpression.elems(), buildArgs)
+                    argExpression.has("expr") -> breakdownExpr(argExpression.expr(), "")
+                    else -> "" // TODO
                 }
-                buildArgs += if (index < arguments.size()) ", " else ")"
+                if (arg.has("name")) {
+                    buildArgs = arg.name() + " = " + buildArgs
+                }
+                buildArgs += if (index < arguments.size() - 1) ", " else ")"
             }
         } else buildArgs += ")"
         return buildArgs
     }
 
     override fun breakdownBinaryOperation(expr: JsonObject, buildStmt: String): String {
+        var buildBinary = buildStmt
+
+        val lhs = expr.lhs()
+        val leftHandSide = when {
+            lhs.has("value") -> utils.getPrimitiveValue(lhs)
+            lhs.has("name") -> lhs.name()
+            lhs.has("expr") -> {
+                var expression = breakdownExpr(lhs.expr(), "")
+                if (lhs.expr().has("args")) {
+                    expression = getArguments(lhs.args(), expression)
+                }
+                expression
+            }
+            else -> breakdownBinaryOperation(expr.lhs(), buildBinary)
+        }
+
         val oper = expr.oper()
         val operator = when {
             oper.has("str")  -> oper.str()
@@ -242,7 +273,22 @@ open class KParserImpl(
             else -> "{$oper}"
         }
 
-        return "$buildStmt${breakdownExpr(expr.lhs(), buildStmt)}$operator${breakdownExpr(expr.rhs(), buildStmt)}"
+        val rhs = expr.rhs()
+        val rightHandSide = when {
+            rhs.has("value") -> utils.getPrimitiveValue(rhs)
+            rhs.has("name") -> rhs.name()
+            rhs.has("expr") -> {
+                var expression = breakdownExpr(rhs.expr(), "")
+                if (rhs.expr().has("args")) {
+                    expression = getArguments(rhs.args(), expression)
+                }
+                expression
+            }
+            else -> breakdownBinaryOperation(expr.rhs(), buildBinary)
+        }
+
+        buildBinary += "$leftHandSide$operator$rightHandSide"
+        return buildBinary
     }
 
     override fun convertToClassProperty(

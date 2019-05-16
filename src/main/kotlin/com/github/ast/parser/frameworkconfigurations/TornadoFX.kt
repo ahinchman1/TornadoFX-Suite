@@ -35,6 +35,17 @@ enum class INPUTS {
 }
 
 /**
+ * Custom controls that will reside under Parent UINodes to indicate interaction
+ */
+enum class CUSTOMCONTROLS {
+    Action,  OnUserSelect
+}
+
+fun KParserImpl.detectDependencyInjection() {
+
+}
+
+/**
  * TornadoFX specific:
  *    Component breakdown meant to be saved and used for test generation
  */

@@ -167,14 +167,19 @@ class FXTestGenerator: Controller() {
      */
     private fun buildMethodStatement(buildMethod: String, method: Method): String {
         var methodStatement = buildMethod
-        methodStatement += "-----------------\n|\tname:${method.name}\n|\tparameters: "
+        methodStatement += "-----------------\n|\tname:${method.name}\n|\tparameters: {"
 
-        method.parameters.forEach { parameter ->
-            methodStatement += "|\t\t${parameter.valOrVar} ${parameter.propertyName}: " +
-                    "${parameter.propertyType}\n"
+        method.parameters.forEachIndexed { index, parameter ->
+            methodStatement += when (index) {
+                0 -> "\t${parameter.valOrVar} ${parameter.propertyName}: " +
+                        "${parameter.propertyType}\t"
+                else -> "|\t${parameter.valOrVar} ${parameter.propertyName}: " +
+                        "${parameter.propertyType}\t"
+            }
+            methodStatement += "}"
         }
 
-        methodStatement += "|\t method" + method.methodStatements + "\n-----------------\n"
+        methodStatement += "\n|\tmethod statements:\n\t\t\t" + method.methodStatements + "\n-----------------\n"
 
         return methodStatement
     }
