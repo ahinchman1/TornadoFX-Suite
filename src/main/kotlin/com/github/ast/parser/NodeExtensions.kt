@@ -3,9 +3,9 @@ package com.github.ast.parser
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 
-fun JsonObject.getType() = this.pieces().getObject(0).name()
+fun JsonObject.getType(): String = this.pieces().getObject(0).name()
 
-fun JsonObject.getCollectionType(num: Int) = this.expr().typeArgs().getObject(num).ref().getType()
+fun JsonObject.getGenericTypeArgument(num: Int): String = this.expr().typeArgs().getObject(num).ref().getType()
 
 fun JsonObject.lambda(): JsonObject = this.get("lambda").asJsonObject
 
@@ -62,3 +62,39 @@ fun JsonObject.str(): String = this.get("str").asString
 fun JsonObject.name(): String = this.get("name").asString
 
 fun JsonObject.form(): String = this.get("form").asString
+
+// next check
+
+fun JsonObject.hasBody(): Boolean = this.has("body")
+
+fun JsonObject.hasBlock(): Boolean = this.has("block")
+
+fun JsonObject.hasParams(): Boolean = this.has("params")
+
+fun JsonObject.hasDeclaration(): Boolean = this.has("decl")
+
+fun JsonObject.hasName(): Boolean = this.has("name")
+
+fun JsonObject.hasString(): Boolean = this.has("str")
+
+fun JsonObject.hasToken(): Boolean = this.has("token")
+
+fun JsonObject.hasExpression(): Boolean = this.has("expr")
+
+fun JsonObject.hasPrimitiveValue(): Boolean = this.has("value")
+
+fun JsonObject.hasBinaryOperation(): Boolean = this.has("lhs") && this.has("oper") && this.has("rhs")
+
+fun JsonObject.hasReceiver(): Boolean = this.has("recv")
+
+fun JsonObject.hasElements(): Boolean = this.has("recv")
+
+fun JsonObject.hasLambda(): Boolean = this.has("lambda")
+
+fun JsonObject.hasFunc(): Boolean = this.has("func")
+
+fun JsonObject.hasArgs(): Boolean = this.has("args")
+
+fun JsonObject.hasTypeArgs(): Boolean = this.has("typeArgs")
+
+fun JsonObject.hasExpressionCall(): Boolean = this.hasExpression() && this.hasTypeArgs() && this.hasArgs()

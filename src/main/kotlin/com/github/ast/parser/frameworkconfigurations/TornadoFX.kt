@@ -62,8 +62,20 @@ fun KParserImpl.saveComponentBreakdown(
 
     if (!currentTFXView.type.isNullOrEmpty()) {
         views[className] = currentTFXView
-        // TODO need to create a contravariant function to allow this to happen
-        // parser.views.add(currentTFXView)
+    }
+}
+
+/**
+ * TornadoFX specific:
+ *    Detects TornadoFX Scopes for Views
+ */
+fun KParserImpl.mapNodesToFunctions(
+        isolatedName: String,
+        className: String,
+        node: JsonObject
+) {
+    if (isolatedName == "scope") {
+        views[className]?.scope = node.expr().rhs().ref().getType()
     }
 }
 
