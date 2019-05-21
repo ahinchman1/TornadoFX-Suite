@@ -5,10 +5,9 @@ import com.github.ast.parser.frameworkconfigurations.TornadoFXView
 import com.github.ast.parser.frameworkconfigurations.detectRoot
 import com.github.ast.parser.frameworkconfigurations.detectScopes
 import com.github.ast.parser.frameworkconfigurations.saveComponentBreakdown
-import com.github.ast.parser.nodebreakdown.Digraph
-import com.github.ast.parser.nodebreakdown.Method
-import com.github.ast.parser.nodebreakdown.TestClassInfo
-import com.github.ast.parser.nodebreakdown.UINode
+import com.github.ast.parser.nodebreakdown.*
+import com.github.hd.tornadofxsuite.app.OnParsingComplete
+import com.github.hd.tornadofxsuite.app.PrintFileToConsole
 import tornadofx.*
 import java.io.BufferedReader
 import java.io.File
@@ -16,9 +15,6 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.*
 import kotlin.collections.ArrayList
-
-class PrintFileToConsole(val file: String, val textFile: String): FXEvent()
-class OnParsingComplete(val testClassInfo: ArrayList<TestClassInfo>): FXEvent()
 
 class FXTestGenerator: Controller() {
 
@@ -51,14 +47,14 @@ class FXTestGenerator: Controller() {
         consoleLogViewHierarchy()
         consoleLogClassBreakdown()
 
-        val classes = breakupClasses(
+        val viewClasses = breakupClasses(
                 scanner.viewImports,
                 scanner.mapClassViewNodes,
                 scanner.detectedUIControls,
                 scanner.views
         )
 
-        fire(OnParsingComplete(classes))
+        fire(OnParsingComplete(viewClasses, scanner.classes))
     }
 
     /**
@@ -83,8 +79,8 @@ class FXTestGenerator: Controller() {
             mappedViewNodes: HashMap<String, Digraph>,
             detectedUIControls: HashMap<String, java.util.ArrayList<UINode>>,
             tfxViews: HashMap<String, TornadoFXView>
-    ): java.util.ArrayList<TestClassInfo> {
-        val classes = java.util.ArrayList<TestClassInfo>()
+    ): MapKClassTo<TestClassInfo> {
+        val classes = MapKClassTo<TestClassInfo>()
 
         viewImports.forEach { (className, item) ->
             // check that all items are there
@@ -94,7 +90,7 @@ class FXTestGenerator: Controller() {
                 val mappedNodes = mappedViewNodes[className] ?: Digraph()
                 val tfxView = tfxViews[className] ?: TornadoFXView()
 
-                classes.add(TestClassInfo(className, item, uiControls, mappedNodes, tfxView))
+                classes[className] = TestClassInfo(className, item, uiControls, mappedNodes, tfxView)
             } else println("Missing info for $className")
         }
 
@@ -142,9 +138,9 @@ class FXTestGenerator: Controller() {
 
     /**
      * Prints class breakdown including methods
-     * TODO - Finish method breakdown formatting and make it testable
+     * TODO - Continue to touch on method parsing
      */
-    fun consoleLogClassBreakdown() {
+    private fun consoleLogClassBreakdown() {
         scanner.classes.forEach { classBreakDown ->
             println("CLASS NAME: " + classBreakDown.className)
             println("CLASS PROPERTIES: ")

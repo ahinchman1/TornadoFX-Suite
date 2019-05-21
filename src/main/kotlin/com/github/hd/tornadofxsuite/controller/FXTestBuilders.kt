@@ -1,14 +1,16 @@
 package com.github.hd.tornadofxsuite.controller
 
 import com.github.ast.parser.nodebreakdown.Digraph
+import com.github.ast.parser.nodebreakdown.MapKClassTo
 import com.github.ast.parser.nodebreakdown.TestClassInfo
 import com.github.ast.parser.nodebreakdown.UINode
 import tornadofx.*
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.util.ArrayList
 import kotlin.random.Random
+
+typealias NodeId = String
 
 class FXTestBuilders : Controller() {
 
@@ -21,17 +23,17 @@ class FXTestBuilders : Controller() {
             "button" to "Button"
     )
 
-    private var controls = mutableMapOf<UINode, String>()
+    private var controls = mutableMapOf<UINode, NodeId>()
 
-    private var forms = mutableMapOf<UINode, String>()
+    private var forms = mutableMapOf<UINode, NodeId>()
 
     /**
      * Write tests by the file
      */
-    fun generateTests(classes: ArrayList<TestClassInfo>) {
+    fun generateTests(classes: MapKClassTo<TestClassInfo>) {
         // Step 1: Write each file with their imports
         for (item in classes) {
-            writeTestFile(item)
+            writeTestFile(item.value)
         }
     }
 
@@ -181,7 +183,7 @@ class FXTestBuilders : Controller() {
     }
 
     /**
-     * Code needed to attached generated random ids to respective UI elements at runtime.
+     * TestFX generated random ids which can be attached to respective UI elements at runtime.
      */
     private fun dynamicallyAddIds() = """
         private fun addAllIdsToDescendants(parent: Parent) {
