@@ -2,7 +2,7 @@ package com.github.ast.parser
 
 import com.google.gson.JsonObject
 
-fun KParserImpl.getPrimitiveValue(value: JsonObject): String {
+fun getPrimitiveValue(value: JsonObject): String {
     val gValue = value.get("value")
     return when (value.get("form").asJsonPrimitive.toString()) {
         "\"BOOLEAN\"" ->  gValue.asBoolean.toString()
@@ -16,21 +16,7 @@ fun KParserImpl.getPrimitiveValue(value: JsonObject): String {
     }
 }
 
-// TODO rewrite to accept 2 types for primitive
-fun KParserImpl.getPrimitiveType(form: JsonObject): String {
-    return when (form.get("form").asJsonPrimitive.toString()) {
-        "\"BOOLEAN\"" -> "Boolean"
-        "\"BYTE\"" -> "Byte"
-        "\"CHAR\"" -> "Char"
-        "\"DOUBLE\"" -> "Double"
-        "\"FLOAT\"" -> "Float"
-        "\"INT\"" -> "Int"
-        "\"NULL\"" -> "null"
-        else -> "Unrecognized value type" // object type probs
-    }
-}
-
-fun KParserImpl.getPrimitiveType(form: String): String {
+fun getPrimitiveType(form: String): String {
     return when (form) {
         "\"BOOLEAN\"" -> "Boolean"
         "\"BYTE\"" -> "Byte"
@@ -43,16 +29,17 @@ fun KParserImpl.getPrimitiveType(form: String): String {
     }
 }
 
-fun KParserImpl.getToken(token: String): String {
+fun getToken(token: String): String {
     return when (token) {
         "DOT" -> "."
         "ASSN" -> " = "
         "NEQ" -> " != "
-        "NEG" -> " - "
+        "NEG" -> "-"
         "EQ" -> " == "
         "RANGE" -> ".."
         "AS" -> " as "
         "ADD" -> " + "
+        "SUB" -> " - "
         else -> token
     }
 }
@@ -66,18 +53,23 @@ fun KParserImpl.getToken(token: String): String {
  *
  * @return [String] 'val' or 'var'
  */
-fun KParserImpl.valOrVar(node: JsonObject): String = if (node.readOnly()) "val " else "var "
+fun valOrVar(node: JsonObject): String = if (node.readOnly()) "val" else "var"
 
-fun KParserImpl.getGenericTypeArgs(node: JsonObject): String {
-    var result = "<"
-    val genericType = node.expr().typeArgs()
+fun getGenericTypeArgs(node: JsonObject): String {
+    var result = ""
+    if (node.typeArgs().size() > 0) {
+        result = "<"
+        val genericType = node.typeArgs()
 
-    for (i in 0..genericType.size()) {
-        result += genericType.getObject(i).ref().getType()
-        if (i < genericType.size()) {
-            result += ", "
+        for (i in 0 until genericType.size()) {
+            result += genericType.getObject(i).ref().getType()
+            if (i < genericType.size()) {
+                result += ", "
+            }
         }
+
+        result += ">"
     }
 
-    return "$result>"
+    return result
 }

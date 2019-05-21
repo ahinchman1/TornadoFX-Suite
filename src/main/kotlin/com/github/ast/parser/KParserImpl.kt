@@ -51,7 +51,7 @@ open class KParserImpl(
             var superClass = superClassNode.type().getType()
 
             // if parent class accepts generic parameters
-            if (superClassNode.hasTypeArgs()) {
+            if (superClassNode.hasTypeArguments()) {
                 superClass += getGenericTypeArgs(superClassNode)
             }
 
@@ -127,6 +127,7 @@ open class KParserImpl(
         stmts.forEach { statement ->
             val stmt = statement.asJsonObject
             when {
+                stmt.hasExpressionCall() -> stmtArray.add(getExpressionCall(stmt.expr()))
                 stmt.hasExpression()  -> stmtArray.add(breakdownExpr(stmt.expr(), ""))
                 stmt.hasDeclaration() -> stmtArray.add(breakdownDecl(stmt.decl(), ""))
                 else ->  println("stmt has$stmt")
@@ -156,7 +157,7 @@ open class KParserImpl(
                 expression
             }
             decl.expr().hasBinaryOperation() -> breakdownBinaryOperation(decl.expr(), "")
-            decl.expr().has("value") -> {
+            decl.expr().hasValue() -> {
                 var expression = breakdownBinaryOperation(decl.expr(), "")
                 expression
             }
@@ -175,16 +176,15 @@ open class KParserImpl(
     ): String {
         var exprStmt = buildStmt
         exprStmt += when {
-            expr.has("lhs") &&
-                    expr.has("oper") &&
-                    expr.has("rhs")-> breakdownBinaryOperation(expr, exprStmt)
-            expr.has("args") -> getArguments(expr.args(), exprStmt)
-            expr.has("name") -> expr.name()
-            expr.has("expr") -> breakdownExpr(expr.expr(), exprStmt)
-            expr.has("elems") -> getElems(expr.elems(), exprStmt)
-            expr.has("params") -> getParams(expr.params(), exprStmt)
-            expr.has("value") -> exprStmt + getPrimitiveValue(expr)
-            expr.has("block") -> breakdownStmts(expr.block().stmts(), methodStatements)
+            expr.hasBinaryOperation()-> breakdownBinaryOperation(expr, exprStmt)
+            expr.hasExpressionCall() -> getExpressionCall(expr)
+            expr.hasArguments() -> getArguments(expr.args(), exprStmt)
+            expr.hasName() -> expr.name()
+            expr.hasExpression() -> breakdownExpr(expr.expr(), exprStmt)
+            expr.hasElements() -> getElems(expr.elems())
+            expr.hasParameters() -> getParams(expr.params(), exprStmt)
+            expr.hasValue() -> exprStmt + getPrimitiveValue(expr)
+            expr.hasBlock() -> breakdownStmts(expr.block().stmts(), methodStatements)
             expr.size() == 0 -> {}
             else -> println(expr)
         }
@@ -192,26 +192,30 @@ open class KParserImpl(
     }
 
     private fun getExpressionCall(expr: JsonObject): String {
-        val anonymousFunction = if (expr.hasLambda()) getLambda(expr.lambda()) else ""
+        val anonymousFunction = if (expr.hasLambda()) breakdownLambda(expr.lambda()) else ""
         return getArguments(expr.args(), expr.expr().name()) + anonymousFunction
     }
 
-    private fun getLambda(lambda: JsonObject): String {
-        var buildLambda = ""
-        buildLambda += breakdownFunction(lambda.func()).forEach(::println)
-        return buildLambda
-    }
-
-    private fun breakdownFunction(func: JsonObject): ArrayList<String> {
+    private fun breakdownLambda(func: JsonObject): String {
         val functionContent = ArrayList<String>()
+        var internalFunction = "{"
+
+        if (func.hasParameters()) {
+            val params = getParams(func.params(), "")
+            if (params.isNotEmpty()) {
+                internalFunction += "$params->\n"
+            }
+        }
+
         when {
-            func.hasParams() -> functionContent.add("params: " + getParams(func.params(), ""))
             func.hasBody() -> functionContent.addAll(breakdownBody(func.body(), functionContent))
             func.hasBlock() -> functionContent.addAll(breakdownStmts(func.block().stmts(), functionContent))
             else -> functionContent.add("")
         }
 
-        return functionContent
+        functionContent.forEach { internalFunction += it }
+
+        return "$internalFunction}"
     }
 
     override fun getParams(params: JsonArray, buildStmt: String): String {
@@ -222,19 +226,19 @@ open class KParserImpl(
         return buildParams
     }
 
-    override fun getElems(elems: JsonArray, buildStmt: String): String {
-        var buildElems = buildStmt
-        if (elems.size() > 0) {
-            elems.forEach {
+    override fun getElems(elems: JsonArray): String {
+        var buildElems = ""
+         if (elems.size() > 0) {
+             elems.forEach {
                 val elem = it.asJsonObject
                 buildElems += when {
                     elem.hasName() -> elem.name()
-                    elem.hasString() -> elem.str()
-                    elem.hasExpression() -> breakdownExpr(elem, buildElems)
+                    elem.hasString() -> "\"" + elem.str() + "\""
+                    elem.hasExpression() -> "$/{" + breakdownExpr(elem, "")+ "}"
                     elem.hasPrimitiveValue() -> getPrimitiveValue(elem)
-                    elem.hasBinaryOperation() -> breakdownBinaryOperation(elem, buildElems)
+                    elem.hasBinaryOperation() -> "$/{" + breakdownBinaryOperation(elem, "") + "}"
                     elem.hasReceiver() -> elem.recv().type().getType()
-                    else -> println("Looks like this element type is: $elem")
+                    else -> "Looks like this element type is: $elem"
                 }
             }
         }
@@ -251,8 +255,9 @@ open class KParserImpl(
                 buildArgs += when {
                     argExpression.hasName() -> argExpression.name()
                     argExpression.hasReceiver() -> argExpression.recv().type().getType() + "::class"
-                    argExpression.hasElements() -> getElems(argExpression.elems(), buildArgs)
+                    argExpression.hasElements() -> getElems(argExpression.elems())
                     argExpression.hasExpression() -> breakdownExpr(argExpression.expr(), "")
+                    argExpression.hasBinaryOperation() -> breakdownBinaryOperation(argExpression, "")
                     else -> "" // TODO
                 }
                 if (arg.has("name")) {

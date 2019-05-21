@@ -69,7 +69,7 @@ fun JsonObject.hasBody(): Boolean = this.has("body")
 
 fun JsonObject.hasBlock(): Boolean = this.has("block")
 
-fun JsonObject.hasParams(): Boolean = this.has("params")
+fun JsonObject.hasParameters(): Boolean = this.has("params")
 
 fun JsonObject.hasDeclaration(): Boolean = this.has("decl")
 
@@ -79,6 +79,8 @@ fun JsonObject.hasString(): Boolean = this.has("str")
 
 fun JsonObject.hasToken(): Boolean = this.has("token")
 
+fun JsonObject.hasValue(): Boolean = this.has("value")
+
 fun JsonObject.hasExpression(): Boolean = this.has("expr")
 
 fun JsonObject.hasPrimitiveValue(): Boolean = this.has("value")
@@ -87,14 +89,14 @@ fun JsonObject.hasBinaryOperation(): Boolean = this.has("lhs") && this.has("oper
 
 fun JsonObject.hasReceiver(): Boolean = this.has("recv")
 
-fun JsonObject.hasElements(): Boolean = this.has("recv")
+fun JsonObject.hasElements(): Boolean = this.has("elems")
 
 fun JsonObject.hasLambda(): Boolean = this.has("lambda")
 
 fun JsonObject.hasFunc(): Boolean = this.has("func")
 
-fun JsonObject.hasArgs(): Boolean = this.has("args")
+fun JsonObject.hasArguments(): Boolean = this.has("args")
 
-fun JsonObject.hasTypeArgs(): Boolean = this.has("typeArgs")
+fun JsonObject.hasTypeArguments(): Boolean = this.has("typeArgs")
 
-fun JsonObject.hasExpressionCall(): Boolean = this.hasExpression() && this.hasTypeArgs() && this.hasArgs()
+fun JsonObject.hasExpressionCall(): Boolean = this.hasExpression() && this.hasTypeArguments() && this.hasArguments()

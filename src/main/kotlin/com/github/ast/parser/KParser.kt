@@ -178,19 +178,16 @@ interface KParser {
     fun getParams(params: JsonArray, buildStmt: String): String
 
     /**
-     * TODO FIND ELEMENT DEFINITION
-     * Breaks down elements within a collection
+     * Breaks down elements used within a call
      *
      * @param elems: [JsonArray] -> node elements
-     * @param buildStmt: [String] -> Buildup of statement string to record
-     *                               for method contents
      *
      * @return [String], continued statement building for method content
      */
-    fun getElems(elems: JsonArray, buildStmt: String): String
+    fun getElems(elems: JsonArray): String
 
     /**
-     * Breaks down argument, the actual value passed to the function
+     * Breaks down argument(s), the actual value passed to the function
      *
      * @param arguments: [JsonArray] -> node arguments
      * @param buildStmt: [String] -> Buildup of statement string to record
