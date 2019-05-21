@@ -154,7 +154,7 @@ class FXTestGenerator: Controller() {
             println("CLASS METHODS: ")
             var buildMethods = ""
             classBreakDown.classMethods.forEach { method ->
-                buildMethods += buildMethodStatement(buildMethods, method)
+                buildMethods += buildMethodStatement(method)
             }
 
             println(buildMethods)
@@ -165,8 +165,8 @@ class FXTestGenerator: Controller() {
      * Prints method breakdown
      * TODO - Finish method breakdown formatting and make it testable
      */
-    private fun buildMethodStatement(buildMethod: String, method: Method): String {
-        var methodStatement = buildMethod
+    private fun buildMethodStatement(method: Method): String {
+        var methodStatement = ""
         methodStatement += "-----------------\n|\t${method.name}("
 
         method.parameters.forEachIndexed { index, parameter ->
