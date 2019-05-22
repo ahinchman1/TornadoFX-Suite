@@ -79,6 +79,8 @@ fun JsonObject.hasString(): Boolean = this.has("str")
 
 fun JsonObject.hasToken(): Boolean = this.has("token")
 
+fun JsonObject.hasVars(): Boolean = this.has("vars")
+
 fun JsonObject.hasValue(): Boolean = this.has("value")
 
 fun JsonObject.hasExpression(): Boolean = this.has("expr")

@@ -124,8 +124,17 @@ fun KParserImpl.detectLambdaControls(
                          nodeHier: LinkedList<String>,
                          nodeLevel: Int = 0
 ) {
+    val rootAssignment = when {
+        node.hasVars() -> node.vars().getObject(0).name()
+        node.expr().hasBinaryOperation() &&  node.expr().rhs().hasExpression() -> node.expr().lhs().name()
+        else -> ""
+    }
 
-    val root = node.expr()
+    val root = when {
+        node.expr().hasBinaryOperation() && node.expr().rhs().hasExpression() -> node.expr().rhs().expr()
+        else -> node.expr()
+
+    }
 
     if (root.has("lambda")) {
         val rootName = root.asJsonObject.expr().name()
@@ -135,7 +144,8 @@ fun KParserImpl.detectLambdaControls(
         /**
          * Create Digraph if the class is new, otherwise, add node to the existing digraph.
          */
-        val graphNode = UINode(rootName, nodeLevel, root, ArrayList())
+        val graphNode = UINode(rootName, nodeLevel, root, rootAssignment, ArrayList())
+
         if (mapClassViewNodes.contains(className)) {
             mapClassViewNodes[className]?.addNode(graphNode)
         } else {

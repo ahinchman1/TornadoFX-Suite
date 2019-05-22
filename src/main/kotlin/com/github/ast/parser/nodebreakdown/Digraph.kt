@@ -147,7 +147,7 @@ class Digraph {
      * don't worry about it
      **/
     private fun getDirectPath(nodeLevel: Int, trace: Queue<UINode>): Array<UINode> {
-        val nodePath = Array(nodeLevel + 1) { UINode("", 0, JsonObject(), ArrayList()) }
+        val nodePath = Array(nodeLevel + 1) { UINode("", 0, JsonObject(), "", ArrayList()) }
 
         trace.iterator().forEach { node ->
             if (node.level <= nodeLevel) {

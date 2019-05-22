@@ -32,6 +32,7 @@ data class TestClassInfo(val className: String,
 data class UINode(val uiNode: String,
                   val level: Int,
                   val nodeTree: JsonObject, // how to identify the nodeTree
+                  val valueAssignment: String, // if it's been assigned/saved to a vlaue
                   val associatedFunctions: ArrayList<String>)
 
 

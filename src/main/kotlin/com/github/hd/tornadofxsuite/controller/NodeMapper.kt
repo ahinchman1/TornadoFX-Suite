@@ -23,7 +23,7 @@ class NodeMapper: Controller() {
         classBreakDown.forEach { classInfo ->
                 classInfo.classProperties.forEach { property ->
                     if (property.isPropertyViewType()) {
-                        mapFunctionstoViewElements(property, classInfo.classMethods)
+                        mapFunctionsToViewElements(property, classInfo.classMethods)
                     }
                 }
             }
@@ -33,8 +33,12 @@ class NodeMapper: Controller() {
      * For detected view properties, read the methods and map which functions affect certain
      * nodes in a view
      */
-    fun mapFunctionstoViewElements(property: Property, classMethods: ArrayList<Method>) {
+    fun mapFunctionsToViewElements(property: Property, classMethods: ArrayList<Method>) {
+        classMethods.forEach { method ->
+            method.methodStatements.forEach {
 
+            }
+        }
     }
 
     private fun Property.isPropertyViewType(): Boolean {
