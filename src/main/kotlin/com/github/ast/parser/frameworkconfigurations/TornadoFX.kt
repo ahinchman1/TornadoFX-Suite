@@ -1,8 +1,10 @@
 package com.github.ast.parser.frameworkconfigurations
 
 import com.github.ast.parser.*
-import com.github.ast.parser.nodebreakdown.Digraph
+import com.github.ast.parser.nodebreakdown.digraph.Digraph
 import com.github.ast.parser.nodebreakdown.UINode
+import com.github.ast.parser.nodebreakdown.digraph.FunctionDigraph
+import com.github.ast.parser.nodebreakdown.digraph.UINodeDigraph
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.*
@@ -39,10 +41,6 @@ enum class INPUTS {
  */
 enum class CUSTOMCONTROLS {
     Action,  OnUserSelect
-}
-
-fun KParserImpl.detectDependencyInjection() {
-
 }
 
 /**
@@ -116,7 +114,7 @@ fun KParserImpl.detectRoot(
 
 /**
  * TornadoFX specific:
- *    Detects TornadoFX View component DSLs which builds a digraph representation
+ *    Detects TornadoFX View component DSLs which builds a [UINodeDigraph] representation
  */
 fun KParserImpl.detectLambdaControls(
                          node: JsonObject,
@@ -124,32 +122,35 @@ fun KParserImpl.detectLambdaControls(
                          nodeHier: LinkedList<String>,
                          nodeLevel: Int = 0
 ) {
+    val nodeExpr = node.expr()
+
     val rootAssignment = when {
         node.hasVars() -> node.vars().getObject(0).name()
-        node.expr().hasBinaryOperation() &&  node.expr().rhs().hasExpression() -> node.expr().lhs().name()
+        nodeExpr.hasBinaryOperation() && nodeExpr.lhs().hasExpressionCall() -> nodeExpr.lhs().expr().name()
+        nodeExpr.hasBinaryOperation() -> nodeExpr.lhs().name()
         else -> ""
     }
 
     val root = when {
-        node.expr().hasBinaryOperation() && node.expr().rhs().hasExpression() -> node.expr().rhs().expr()
-        else -> node.expr()
+        nodeExpr.hasBinaryOperation() && nodeExpr.rhs().hasExpression() -> nodeExpr.rhs()
+        else -> nodeExpr
 
     }
 
     if (root.has("lambda")) {
-        val rootName = root.asJsonObject.expr().name()
+        val rootName = root.expr().name()
         nodeHier.addLast(rootName)
         println("$nodeLevel - $rootName")
 
         /**
-         * Create Digraph if the class is new, otherwise, add node to the existing digraph.
+         * Create [UINodeDigraph] if the class is new, otherwise, add node to the existing digraph.
          */
-        val graphNode = UINode(rootName, nodeLevel, root, rootAssignment, ArrayList())
+        val graphNode = UINode(rootName, nodeLevel, root, rootAssignment, FunctionDigraph(), ArrayList())
 
         if (mapClassViewNodes.contains(className)) {
             mapClassViewNodes[className]?.addNode(graphNode)
         } else {
-            val digraph = Digraph()
+            val digraph = UINodeDigraph()
             digraph.addNode(graphNode)
             mapClassViewNodes[className] = digraph
         }

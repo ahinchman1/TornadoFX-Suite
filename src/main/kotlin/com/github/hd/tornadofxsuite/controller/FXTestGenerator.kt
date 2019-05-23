@@ -6,6 +6,7 @@ import com.github.ast.parser.frameworkconfigurations.detectRoot
 import com.github.ast.parser.frameworkconfigurations.detectScopes
 import com.github.ast.parser.frameworkconfigurations.saveComponentBreakdown
 import com.github.ast.parser.nodebreakdown.*
+import com.github.ast.parser.nodebreakdown.digraph.UINodeDigraph
 import com.github.hd.tornadofxsuite.app.OnParsingComplete
 import com.github.hd.tornadofxsuite.app.PrintFileToConsole
 import tornadofx.*
@@ -76,7 +77,7 @@ class FXTestGenerator: Controller() {
      */
     private fun breakupClasses(
             viewImports: HashMap<String, String>,
-            mappedViewNodes: HashMap<String, Digraph>,
+            mappedViewNodes: HashMap<String, UINodeDigraph>,
             detectedUIControls: HashMap<String, java.util.ArrayList<UINode>>,
             tfxViews: HashMap<String, TornadoFXView>
     ): MapKClassTo<TestClassInfo> {
@@ -87,7 +88,7 @@ class FXTestGenerator: Controller() {
             if (detectedUIControls.containsKey(className) &&
                     mappedViewNodes.containsKey(className)) {
                 val uiControls = detectedUIControls[className] ?: java.util.ArrayList()
-                val mappedNodes = mappedViewNodes[className] ?: Digraph()
+                val mappedNodes = mappedViewNodes[className] ?: UINodeDigraph()
                 val tfxView = tfxViews[className] ?: TornadoFXView()
 
                 classes[className] = TestClassInfo(className, item, uiControls, mappedNodes, tfxView)
@@ -117,12 +118,12 @@ class FXTestGenerator: Controller() {
                 println(className)
                 digraph.viewNodes.forEach { (bucket, children) ->
                     val nodeLevel = bucket.level
-                    var viewNode = "$nodeLevel \t${bucket.uiNode}"
+                    var viewNode = "$nodeLevel \t${bucket.nodeType}"
 
                     children.forEachIndexed { index, node ->
                         viewNode += if (index < children.size) {
-                            " -> ${node.uiNode} "
-                        } else "${node.uiNode}\n"
+                            " -> ${node.nodeType} "
+                        } else "${node.nodeType}\n"
 
                     }
                     println(viewNode)

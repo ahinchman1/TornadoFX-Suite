@@ -4,6 +4,8 @@ import com.github.ast.parser.frameworkconfigurations.ComponentBreakdownFunction
 import com.github.ast.parser.frameworkconfigurations.DetectFrameworkComponents
 import com.github.ast.parser.frameworkconfigurations.TornadoFXView
 import com.github.ast.parser.nodebreakdown.*
+import com.github.ast.parser.nodebreakdown.digraph.Digraph
+import com.github.ast.parser.nodebreakdown.digraph.UINodeDigraph
 import com.google.gson.*
 import kastree.ast.Node
 import kastree.ast.psi.Parser
@@ -24,7 +26,7 @@ open class KParserImpl(
 
     override var detectedUIControls = MapKClassTo<ArrayList<UINode>>()
 
-    override var mapClassViewNodes = MapKClassTo<Digraph>()
+    override var mapClassViewNodes = MapKClassToDigraph<UINodeDigraph>()
 
     override var viewImports = MapKClassTo<String>()
 
@@ -424,11 +426,24 @@ open class KParserImpl(
     }
 
     /**
+     * Using enum classes to check if lambda is a data control
+     */
+    inline fun <reified T : Enum<T>> isControl(control: String): Boolean {
+        var result = false
+        enumValues<T>().forEach {
+            if (control.toLowerCase() == (it.name).toLowerCase()) {
+                result = true
+            }
+        }
+        return result
+    }
+
+    /**
      * Using enum classes to check for control values here
      */
     inline fun <reified T : Enum<T>> addControls(control: UINode, className: String) {
         enumValues<T>().forEach {
-            if (control.uiNode.toLowerCase() == (it.name).toLowerCase()) {
+            if (control.nodeType.toLowerCase() == (it.name).toLowerCase()) {
                 if (!detectedUIControls.containsKey(className)) {
                     val controlCollection = ArrayList<UINode>()
                     detectedUIControls[className] = controlCollection

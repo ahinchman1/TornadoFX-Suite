@@ -1,9 +1,9 @@
 package com.github.hd.tornadofxsuite.controller
 
-import com.github.ast.parser.nodebreakdown.Digraph
 import com.github.ast.parser.nodebreakdown.MapKClassTo
 import com.github.ast.parser.nodebreakdown.TestClassInfo
 import com.github.ast.parser.nodebreakdown.UINode
+import com.github.ast.parser.nodebreakdown.digraph.UINodeDigraph
 import tornadofx.*
 import java.io.File
 import java.nio.file.Files
@@ -47,7 +47,7 @@ class FXTestBuilders : Controller() {
 
         classInfo.detectedUIControls.forEach {
             val id = randomString()
-            controlList += "\t\tControl(${controlDictionary[it.uiNode]}::class, \"$id\")\n"
+            controlList += "\t\tControl(${controlDictionary[it.nodeType]}::class, \"$id\")\n"
             controls[it] = id
         }
 
@@ -145,10 +145,10 @@ class FXTestBuilders : Controller() {
         var setup = ""
 
         controls.forEach { (node, id) ->
-            if (node.uiNode == "form") {
+            if (node.nodeType == "form") {
                 forms[node] = id
             }
-            val nodeType = controlDictionary[node.uiNode]
+            val nodeType = controlDictionary[node.nodeType]
             val formVar = "\tlateinit var $id$nodeType: $nodeType\n"
             setup += formVar
         }
@@ -174,7 +174,7 @@ class FXTestBuilders : Controller() {
         """
 
         controls.forEach { (node, id) ->
-            setup += "\n\t\t\t$id${controlDictionary[node.uiNode]} = from(view.root).lookup(#$id).query()"
+            setup += "\n\t\t\t$id${controlDictionary[node.nodeType]} = from(view.root).lookup(#$id).query()"
         }
 
         setup += "\n\t\t}\n\t}\n\n"
@@ -211,7 +211,7 @@ class FXTestBuilders : Controller() {
      * Pull out of control MutableMap into a new MutableMap grouping for testing
      */
     private fun isNodeInForm(
-            digraph: Digraph,
+            digraph: UINodeDigraph,
             formControlMap: MutableMap<UINode, String>,
             nodeControl: UINode,
             nodeId: String,
@@ -234,7 +234,7 @@ class FXTestBuilders : Controller() {
         nodePath.forEachIndexed { index, node ->
             nodeReference += if (index == 0) {
                 "root"
-            } else node.uiNode
+            } else node.nodeType
         }
 
         return nodeReference
@@ -248,9 +248,9 @@ class FXTestBuilders : Controller() {
         var hasButton = false
 
         formControls.forEach { (node, id) ->
-            if (node.uiNode == "button") hasButton = true
+            if (node.nodeType == "button") hasButton = true
 
-            if (node.uiNode != "form") {
+            if (node.nodeType != "form") {
                 formTests += testIndividualNodeStub(node, id)
             }
         }
@@ -260,7 +260,7 @@ class FXTestBuilders : Controller() {
             // input "Something" in all textfields and clicks a button
             formTests += "\t@Test\n\tfun testInputAll() {\n"
             formControls.forEach { (node, nodeId) ->
-                formTests += when (node.uiNode) {
+                formTests += when (node.nodeType) {
                     "textfield" -> "\t\tclickOn(${nodeId}TextField).write(\"Something\")\n"
                     "button" -> "\t\tclickOn(${nodeId}Button)\n"
                     else -> ""
@@ -271,7 +271,7 @@ class FXTestBuilders : Controller() {
             // input nothing and click button
             formTests += "\t@Test\n\tfun testEmptyForm() {\n"
             formControls.forEach { (node, nodeId) ->
-                formTests += when (node.uiNode) {
+                formTests += when (node.nodeType) {
                     "textfield" -> "\t\tclickOn(${nodeId}TextField).write(\"\")\n"
                     "button" -> "\t\tclickOn(${nodeId}Button)\n"
                     else -> ""
@@ -290,7 +290,7 @@ class FXTestBuilders : Controller() {
             node: UINode,
             nodeId: String
     ) = "\n\t@Test" +
-            "\n\tfun test$nodeId${controlDictionary[node.uiNode]}() {" +
+            "\n\tfun test$nodeId${controlDictionary[node.nodeType]}() {" +
             "\n${performIndividualAction(node, nodeId)}\n" +
             "\t}\n"
 
@@ -300,7 +300,7 @@ class FXTestBuilders : Controller() {
     private fun performIndividualAction(
             node: UINode,
             nodeId: String
-    ) = when (node.uiNode) {
+    ) = when (node.nodeType) {
             "textfield" -> buildTextFieldTest(node, nodeId)
             "button" -> buildButtonTest(node, nodeId)
             else -> ""
@@ -317,21 +317,21 @@ class FXTestBuilders : Controller() {
     private fun buildTextFieldTest(
             node: UINode,
             nodeId: String
-    ) = if (node.nodeTree.has("args")) {
+    ) = if (node.nodeChildren.has("args")) {
         // may be potentially flappy if a model parameter returns an empty
         """
-            assertNotNull($nodeId${node.uiNode}.text)
-            assertTrue(!$nodeId${node.uiNode}.text.isNullOrEmpty())
+            assertNotNull($nodeId${node.nodeType}.text)
+            assertTrue(!$nodeId${node.nodeType}.text.isNullOrEmpty())
 
-            clickOn($nodeId${controlDictionary[node.uiNode]}).write("Something")
-            assertEquals("Something", $nodeId${controlDictionary[node.uiNode]}.text)
+            clickOn($nodeId${controlDictionary[node.nodeType]}).write("Something")
+            assertEquals("Something", $nodeId${controlDictionary[node.nodeType]}.text)
         """.replaceIndent("\t\t")
         } else {
         """
-            assertTrue($nodeId${node.uiNode}.text.isNullOrEmpty())
+            assertTrue($nodeId${node.nodeType}.text.isNullOrEmpty())
 
-            clickOn($nodeId${controlDictionary[node.uiNode]}).write("Something")
-            assertEquals("Something", $nodeId${controlDictionary[node.uiNode]}.text)
+            clickOn($nodeId${controlDictionary[node.nodeType]}).write("Something")
+            assertEquals("Something", $nodeId${controlDictionary[node.nodeType]}.text)
         """.replaceIndent("\t\t")
         }
 
@@ -346,7 +346,7 @@ class FXTestBuilders : Controller() {
     private fun buildButtonTest(
             node: UINode,
             nodeId: String
-    ) = "\t\tclickOn($nodeId${controlDictionary[node.uiNode]})"
+    ) = "\t\tclickOn($nodeId${controlDictionary[node.nodeType]})"
 
     private fun randomString() = firstLetter[Random.nextInt(0, firstLetter.size)] +
             (1..STRING_LENGTH)

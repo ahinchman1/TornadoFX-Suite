@@ -1,6 +1,7 @@
 package com.github.ast.parser
 
 import com.github.ast.parser.nodebreakdown.*
+import com.github.ast.parser.nodebreakdown.digraph.UINodeDigraph
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -34,11 +35,11 @@ interface KParser {
 
     /**
      * key: class name
-     * value: a representation of the view hierarchy via a [Digraph]
+     * value: a representation of the view hierarchy via a [UINodeDigraph]
      *
      * @return all available view hierarchies represented by directed graphs found in view classes
      */
-    var mapClassViewNodes: MapKClassTo<Digraph>
+    var mapClassViewNodes: MapKClassToDigraph<UINodeDigraph>
 
     /**
      * key: class name
@@ -80,11 +81,10 @@ interface KParser {
      * Convert method with [Gson] and start breaking down class methods
      * to record into a [Method] object.
      *
-     *  TODO Part 1 - Start collecting the content of methods from current AST breakdown.
      *  TODO Part 2 - Map nodes-to-function as method analysis detects node property changes.
      *
      * @param method: [Node.Decl.Func] -> kastree.ast.Node.Decl.Func
-     * @param classMethods: [ArrayList] -> ArrayList of [Methods] passed down
+     * @param classMethods: [ArrayList] -> ArrayList of [Method] passed down
      *                                     to preserve methods per class
      */
     fun breakdownClassMethod(method: Node.Decl.Func, classMethods: ArrayList<Method>)
