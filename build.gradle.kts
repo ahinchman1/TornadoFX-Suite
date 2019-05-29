@@ -1,13 +1,13 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.jetbrains.kotlin.jvm").version("1.3.30")
-    id("com.github.johnrengelman.shadow").version("5.0.0")
+    id("org.jetbrains.kotlin.jvm").version("1.3.21")
+    id("com.github.johnrengelman.shadow").version("4.0.2")
     application
 }
 
-val kotlin_version = "1.3.30"
-val tornadofx_version = "1.7.17"
+val kotlinVersion = "1.3.21"
+val tornadoFxVersion = "1.7.17"
 
 repositories {
     jcenter()
@@ -25,7 +25,7 @@ dependencies {
     // Use the Kotlin JDK 8 standard library.
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 
-    compile("no.tornado:tornadofx:$tornadofx_version")
+    compile("no.tornado:tornadofx:$tornadoFxVersion")
 
     compile("com.google.code.gson:gson:2.8.5")
 
