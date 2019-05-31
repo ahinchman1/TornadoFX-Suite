@@ -1,12 +1,12 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.jetbrains.kotlin.jvm").version("1.3.21")
+    id("org.jetbrains.kotlin.jvm").version("1.3.31")
     id("com.github.johnrengelman.shadow").version("4.0.2")
     application
 }
 
-val kotlinVersion = "1.3.21"
+val kotlinVersion = "1.3.31"
 val tornadoFxVersion = "1.7.17"
 
 repositories {
