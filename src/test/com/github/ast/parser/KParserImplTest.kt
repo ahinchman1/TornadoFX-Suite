@@ -156,6 +156,23 @@ class KParserImplTest {
         // TODO
     }
 
+    @Test
+    fun `Method statement is an empty return statement`() {
+        val method = parseAST(
+                """
+                    fun fullName() : String {
+                    return ""
+                }
+                """.trimIndent()
+        )
+
+        val body = method.getMethodBody().block().stmts()
+
+        val result = parser.breakdownStmts(body, arrayListOf())
+        verify(parser).breakdownExpr(body[0].asJsonObject.expr(), "")
+        assertEquals(result.size, 1)
+    }
+
     /**
      * Breakdown Node Declaration
      */
@@ -187,8 +204,16 @@ class KParserImplTest {
      */
 
     @Test
-    fun `Expression is empty`() {
+    fun `Expression is an expression call`() {
+        val declaration = parseAST(
+                """
+                    val p = Person()
+                """.trimIndent()
+        )
 
+        val expression = declaration.decls().getObject(0).expr()
+        parser.breakdownExpr(expression, "")
+        verify(parser).getExpressionCall(expression)
     }
 
     @Test
@@ -346,16 +371,6 @@ class KParserImplTest {
             }
 
              var p = Person()
-        """.trimIndent()
-    }
-
-    private fun tfxFunction(): String {
-        return """
-            fun editCatSchedule(catSchedule: CatSchedule) {
-                val catScheduleScope = CatScheduleScope()
-                catScheduleScope.model.item = catSchedule
-                find(Editor::class, scope = catScheduleScope).openModal()
-            }
         """.trimIndent()
     }
 

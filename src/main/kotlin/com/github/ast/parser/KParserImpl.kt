@@ -194,7 +194,7 @@ open class KParserImpl(
         return exprStmt
     }
 
-    private fun getExpressionCall(expr: JsonObject): String {
+    override fun getExpressionCall(expr: JsonObject): String {
         val anonymousFunction = if (expr.hasLambda()) breakdownLambda(expr.lambda()) else ""
         return getArguments(expr.args(), expr.expr().name()) + anonymousFunction
     }

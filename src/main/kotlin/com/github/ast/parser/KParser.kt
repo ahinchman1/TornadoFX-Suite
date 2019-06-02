@@ -167,6 +167,15 @@ interface KParser {
     ): String
 
     /**
+     * Special expression function that helps organizes expression call
+     *
+     * @param expr: [JsonObject] -> node expression object
+     *
+     * @return [String], continued statement building for method content
+     */
+    fun getExpressionCall(expr: JsonObject): String
+
+    /**
      * Breaks down parameter values defined in a function call
      *
      * @param params: [JsonArray] -> node parameters
