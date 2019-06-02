@@ -20,14 +20,14 @@ sealed class Node(
      * @param level determines how deep a node sits within a view hierarchy.
      * @param nodeChildren a way to uniquely identify the node by its children.
      * @param functionComposition a compositional map of functions fired from interaction of this node.
-     * @param valueAssignment when a value is assigned to a val or var, used for identifying nodes in function mapping.
+     * @param propertyAssignment when a value is assigned to a val or var, used for identifying nodes in function mapping.
      * @param associatedFunctions any functions that may affect a state of this node or its properties.
      */
     data class UINode(
             val nodeType: String,
             val uiLevel: Int,
             val nodeChildren: JsonObject,
-            val valueAssignment: String,
+            val propertyAssignment: String,
             val functionComposition: Digraph<UIFunctionComposition>,
             val associatedFunctions: ArrayList<String>
     ): Node(uiLevel)

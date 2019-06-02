@@ -145,12 +145,12 @@ class FXTestGenerator: Controller() {
         scanner.classes.forEach { classBreakDown ->
             println("CLASS NAME: " + classBreakDown.className)
             println("CLASS PROPERTIES: ")
-            classBreakDown.classProperties.forEach { property ->
-                println("\t${property.propertyName}: ${property.propertyType}")
+            classBreakDown.properties.forEach { property ->
+                println("\t${property.name}: ${property.type}")
             }
             println("CLASS METHODS: ")
             var buildMethods = ""
-            classBreakDown.classMethods.forEach { method ->
+            classBreakDown.methods.forEach { method ->
                 buildMethods += buildMethodStatement(method)
             }
 
@@ -168,8 +168,8 @@ class FXTestGenerator: Controller() {
 
         method.parameters.forEachIndexed { index, parameter ->
             methodStatement += when (index) {
-                method.parameters.size - 1 -> "${parameter.propertyName}: ${parameter.propertyType}"
-                else -> "${parameter.propertyName}: ${parameter.propertyType}, "
+                method.parameters.size - 1 -> "${parameter.name}: ${parameter.type}"
+                else -> "${parameter.name}: ${parameter.type}, "
             }
         }
 

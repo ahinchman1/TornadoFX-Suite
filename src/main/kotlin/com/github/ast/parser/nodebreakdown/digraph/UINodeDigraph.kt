@@ -22,7 +22,7 @@ class UINodeDigraph: Digraph<UINode>() {
                     nodeType = "",
                     uiLevel = 0,
                     nodeChildren = JsonObject(),
-                    valueAssignment = "",
+                    propertyAssignment = "",
                     functionComposition = FunctionDigraph(),
                     associatedFunctions = ArrayList()
             )
@@ -41,4 +41,13 @@ class UINodeDigraph: Digraph<UINode>() {
      * Get View Node by index
      **/
     override fun getElementByIndex(index: Int): UINode = (viewNodes.keys).toTypedArray()[index]
+
+    fun getNodeByPropertyAssignment(propertyAssignment: String): UINode? {
+        getChildren(root).forEach { node ->
+            if (node.propertyAssignment.isNotBlank() && node.propertyAssignment == propertyAssignment) {
+                return node
+            }
+        }
+        return null
+    }
 }

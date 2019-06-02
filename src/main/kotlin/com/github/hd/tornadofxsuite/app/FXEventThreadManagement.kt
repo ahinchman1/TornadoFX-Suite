@@ -1,6 +1,5 @@
 package com.github.hd.tornadofxsuite.app
 
-import com.github.ast.parser.frameworkconfigurations.TornadoFXView
 import com.github.ast.parser.nodebreakdown.ClassBreakDown
 import com.github.ast.parser.nodebreakdown.MapKClassTo
 import com.github.ast.parser.nodebreakdown.TestClassInfo
