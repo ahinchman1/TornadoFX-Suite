@@ -4,7 +4,7 @@ import com.github.ast.parser.nodebreakdown.UIFunctionComposition
 import java.util.*
 
 /**
- * Store view hierarchy in the form of a directed graph
+ * When a node is interacted with, a function composition saves the order functions are spurned.
  */
 class FunctionDigraph: Digraph<UIFunctionComposition>() {
 

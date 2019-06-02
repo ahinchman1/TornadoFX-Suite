@@ -67,20 +67,6 @@ fun KParserImpl.saveComponentBreakdown(
  * TornadoFX specific:
  *    Detects TornadoFX Scopes for Views
  */
-fun KParserImpl.mapNodesToFunctions(
-        isolatedName: String,
-        className: String,
-        node: JsonObject
-) {
-    if (isolatedName == "scope") {
-        views[className]?.scope = node.expr().rhs().ref().getType()
-    }
-}
-
-/**
- * TornadoFX specific:
- *    Detects TornadoFX Scopes for Views
- */
 fun KParserImpl.detectScopes(
         isolatedName: String,
         className: String,
