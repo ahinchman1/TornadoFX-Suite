@@ -163,6 +163,7 @@ open class KParserImpl(
                 var expression = breakdownBinaryOperation(decl.expr(), "")
                 expression
             }
+            decl.expr().hasName() -> decl.expr().name()
             else -> TODO()
         }
 

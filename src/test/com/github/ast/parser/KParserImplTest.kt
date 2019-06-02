@@ -1,11 +1,13 @@
-package com.github.ast.parser
+package github.ast.parser
 
+import com.github.ast.parser.*
 import com.github.ast.parser.frameworkconfigurations.ComponentBreakdownFunction
 import com.github.ast.parser.frameworkconfigurations.DetectFrameworkComponents
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.spy
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import kastree.ast.psi.Parser
 import mu.KotlinLogging
 import org.junit.Before
@@ -15,6 +17,7 @@ import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.junit.MockitoJUnit
 import org.mockito.junit.MockitoRule
+import javax.json.Json
 import kotlin.test.assertEquals
 
 class KParserImplTest {
@@ -54,7 +57,7 @@ class KParserImplTest {
 
     @Test
     fun `Method body is a block function`() {
-        val function = parseAST(
+        val method = parseAST(
                 """
                     fun bar() : String {
                         // Print hello
@@ -63,7 +66,7 @@ class KParserImplTest {
                 """.trimIndent()
         )
         val stmts = arrayListOf<String>()
-        val body = function.decls().getObject(0).body()
+        val body = method.getMethodBody()
 
         parser.breakdownBody(body, stmts)
         verify(parser).breakdownStmts(body.block().stmts(), stmts)
@@ -71,23 +74,22 @@ class KParserImplTest {
 
     @Test
     fun `Method body is an expression`() {
-        val function = parseAST(
+        val method = parseAST(
                 """
                     override fun onHeader(text:Text) = runLater {
                         textarea.appendText("\tpart of header. skip\n")
 	                }
                 """.trimIndent()
         )
-        val stmts = arrayListOf<String>()
-        val body = function.decls().getObject(0).body()
+        val body = method.getMethodBody()
 
-        parser.breakdownBody(body, stmts)
-        assertEquals(stmts.size, 1)
+        val result = parser.breakdownBody(body, arrayListOf())
         verify(parser).breakdownExpr(body.expr(), "")
+        assertEquals(result.size, 1)
     }
 
     @Test
-    fun `Method body has a single assignment Statement`() {
+    fun `Method body is a binary operation`() {
 
     }
 
@@ -97,22 +99,61 @@ class KParserImplTest {
 
     @Test
     fun `Method statements are empty`() {
+        val method = parseAST(
+                """
+                    fun emptyFunction() {
+                        // why would this be a thing ever lol oh well
+                    }
+                """.trimIndent()
+        )
 
+        val body = method.getMethodBody().block().stmts()
+
+        val result = parser.breakdownStmts(body, arrayListOf())
+        assertEquals(result.size, 0)
     }
 
     @Test
-    fun `Method statement is expression`() {
+    fun `Method statement is an expression`() {
+        val method = parseAST(
+                """
+                    fun changeCatAvi(catSchedule: CatSchedule) {
+                        view.avi.children.clear()
+                        val catScheduleScope = catSchedule
+                        catScheduleScope.model.item = catSchedule
+                    }
+                """.trimIndent()
+        )
 
+        val body = method.getMethodBody().block().stmts()
+
+        val result = parser.breakdownStmts(body, arrayListOf())
+        verify(parser).breakdownExpr(body[0].asJsonObject.expr(), "")
+        verify(parser).breakdownExpr(body[2].asJsonObject.expr(), "")
+        assertEquals(result.size, 3)
     }
 
     @Test
     fun `Method statement is a declaration`() {
+        val method = parseAST(
+                """
+                    fun editCatSchedule(catSchedule: CatSchedule) {
+                        val catScheduleScope = CatScheduleScope()
+                        catScheduleScope.model.item = catSchedule
+                    }
+                """.trimIndent()
+        )
 
+        val body = method.getMethodBody().block().stmts()
+
+        val result = parser.breakdownStmts(body, arrayListOf())
+        verify(parser).breakdownDecl(body[0].asJsonObject.decl(), "")
+        assertEquals(result.size, 2)
     }
 
     @Test
-    fun `Method statement is neither an expression nor a declaration`() {
-        logger.debug("")
+    fun `Method statement is an expression call`() {
+        // TODO
     }
 
     /**
@@ -120,31 +161,25 @@ class KParserImplTest {
      */
 
     @Test
-    fun `Declaration is empty`() {
-        val node = parseAST("var p = Person()")
+    fun `Declaration is an expression`() {
+        val method = parseAST(
+                """
+                    fun createPerson() {
+                        val p = Person()
+                    }
+                """.trimIndent()
+        )
 
-        println(node)
-    }
+        val declaration = method.getMethodBody().block().stmts()[0].asJsonObject.decl()
 
-    @Test
-    fun `Declaration is a simple member property`() {
-        val node = parseAST("var p = Person()")
-
-        println(node)
-    }
-
-    @Test
-    fun `Declaration is a complex member property`() {
-        val node = parseAST("var p = Person()")
-
-        println(node)
+        val result = parser.breakdownDecl(declaration, "")
+        verify(parser).breakdownDeclProperty(declaration, "")
+        assertEquals(result, "val p = Person()")
     }
 
     @Test
     fun `Declaration is an anonymous function`() {
-        val node = parseAST("var p = Person()")
-
-        println(node)
+        // TODO
     }
 
     /**
@@ -323,6 +358,8 @@ class KParserImplTest {
             }
         """.trimIndent()
     }
+
+    private fun JsonObject.getMethodBody(): JsonObject = this.decls().getObject(0).body()
 
     companion object {
         private val logger = KotlinLogging.logger{}
