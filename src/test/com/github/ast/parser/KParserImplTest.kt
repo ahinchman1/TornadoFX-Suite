@@ -6,8 +6,6 @@ import com.github.ast.parser.frameworkconfigurations.DetectFrameworkComponents
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.spy
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import kastree.ast.psi.Parser
 import mu.KotlinLogging
 import org.junit.Before
@@ -17,7 +15,6 @@ import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.junit.MockitoJUnit
 import org.mockito.junit.MockitoRule
-import javax.json.Json
 import kotlin.test.assertEquals
 
 class KParserImplTest {
@@ -196,7 +193,7 @@ class KParserImplTest {
 
     @Test
     fun `Declaration is an anonymous function`() {
-        // TODO
+
     }
 
     /**
@@ -205,20 +202,28 @@ class KParserImplTest {
 
     @Test
     fun `Expression is an expression call`() {
-        val declaration = parseAST(
+        val expr = parseAST(
                 """
                     val p = Person()
                 """.trimIndent()
         )
 
-        val expression = declaration.decls().getObject(0).expr()
+        val expression = expr.decls().getObject(0).expr()
         parser.breakdownExpr(expression, "")
         verify(parser).getExpressionCall(expression)
     }
 
     @Test
     fun `Expression is a binary operation`() {
+        val expr = parseAST(
+                """
+                    val p = cat.avi.clear()
+                """.trimIndent()
+        )
 
+        val expression = expr.decls().getObject(0).expr()
+        parser.breakdownExpr(expression, "")
+        verify(parser).breakdownBinaryOperation(expression, "")
     }
 
     @Test
@@ -228,7 +233,14 @@ class KParserImplTest {
 
     @Test
     fun `Expression is a name`() {
+        val expr = parseAST(
+                """
+                    val p = catSchedule
+                """.trimIndent()
+        )
 
+        val expression = expr.decls().getObject(0).expr()
+        assertEquals(expression.name(), parser.breakdownExpr(expression, ""))
     }
 
     @Test
@@ -248,7 +260,14 @@ class KParserImplTest {
 
     @Test
     fun `Expression is a primitive value`() {
+        val expr = parseAST(
+                """
+                    val number = 4
+                """.trimIndent()
+        )
 
+        val expression = expr.decls().getObject(0).expr()
+        assertEquals("4", parser.breakdownExpr(expression, ""))
     }
 
     @Test
