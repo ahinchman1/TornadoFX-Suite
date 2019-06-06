@@ -158,8 +158,8 @@ class KParserImplTest {
         val method = parseAST(
                 """
                     fun fullName() : String {
-                    return ""
-                }
+                        return ""
+                    }
                 """.trimIndent()
         )
 
@@ -184,7 +184,7 @@ class KParserImplTest {
                 """.trimIndent()
         )
 
-        val declaration = method.getMethodBody().block().stmts()[0].asJsonObject.decl()
+        val declaration = method.getMethodStatement(0).decl()
 
         val result = parser.breakdownDecl(declaration, "")
         verify(parser).breakdownDeclProperty(declaration, "")
@@ -193,7 +193,7 @@ class KParserImplTest {
 
     @Test
     fun `Declaration is an anonymous function`() {
-
+        // TODO
     }
 
     /**
@@ -202,55 +202,65 @@ class KParserImplTest {
 
     @Test
     fun `Expression is an expression call`() {
-        val expr = parseAST(
-                """
-                    val p = Person()
-                """.trimIndent()
-        )
+        val expr = parseAST("val p = Person()")
 
-        val expression = expr.decls().getObject(0).expr()
+        val expression = expr.getExpression()
         parser.breakdownExpr(expression, "")
         verify(parser).getExpressionCall(expression)
     }
 
     @Test
     fun `Expression is a binary operation`() {
-        val expr = parseAST(
-                """
-                    val p = cat.avi.clear()
-                """.trimIndent()
-        )
+        val expr = parseAST(" val p = cat.avi.clear()")
 
-        val expression = expr.decls().getObject(0).expr()
+        val expression = expr.getExpression()
         parser.breakdownExpr(expression, "")
         verify(parser).breakdownBinaryOperation(expression, "")
     }
 
     @Test
     fun `Expression is a set of arguments`() {
-
+        // TODO
     }
 
     @Test
     fun `Expression is a name`() {
-        val expr = parseAST(
-                """
-                    val p = catSchedule
-                """.trimIndent()
-        )
+        val expr = parseAST("val p = catSchedule")
 
-        val expression = expr.decls().getObject(0).expr()
+        val expression = expr.getExpression()
         assertEquals(expression.name(), parser.breakdownExpr(expression, ""))
     }
 
     @Test
     fun `Expression is another expression`() {
+        val method = parseAST(
+                """
+                    fun updateContact() {
+                        println("Contact updated!")
+                    }
+                """.trimIndent()
+        )
 
+        val expression = method.getMethodStatement(0).expr()
+
+        parser.breakdownExpr(expression, "")
+        verify(parser).breakdownExpr(expression.expr(), "")
     }
 
     @Test
     fun `Expression is a set of elements`() {
+        val method = parseAST(
+                """
+                    fun updateContact() {
+                        println("Contact updated!")
+                    }
+                """.trimIndent()
+        )
 
+        val expression = method.getMethodStatement(0).expr()
+
+        parser.breakdownExpr(expression, "")
+        verify(parser).getElems(expression.args().getObject(0).expr().elems())
     }
 
     @Test
@@ -260,11 +270,7 @@ class KParserImplTest {
 
     @Test
     fun `Expression is a primitive value`() {
-        val expr = parseAST(
-                """
-                    val number = 4
-                """.trimIndent()
-        )
+        val expr = parseAST("val number = 4")
 
         val expression = expr.decls().getObject(0).expr()
         assertEquals("4", parser.breakdownExpr(expression, ""))
@@ -394,6 +400,10 @@ class KParserImplTest {
     }
 
     private fun JsonObject.getMethodBody(): JsonObject = this.decls().getObject(0).body()
+
+    private fun JsonObject.getMethodStatement(num: Int): JsonObject = this.getMethodBody().block().stmts().getObject(num)
+
+    private fun JsonObject.getExpression(): JsonObject = this.decls().getObject(0).expr()
 
     companion object {
         private val logger = KotlinLogging.logger{}
