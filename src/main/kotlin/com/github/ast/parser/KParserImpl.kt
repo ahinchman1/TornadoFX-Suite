@@ -333,9 +333,9 @@ open class KParserImpl(
 
     override fun saveViewImport(): String {
         return if (currentPath.contains("kotlin/")) {
-            currentPath.split("kotlin")[1].replace("/", ".").substring(1)
+            currentPath.split("kotlin")[1].replace("/", ".").substring(1).split(".kt")[0]
         } else {
-            currentPath.split("java")[1].replace("/", ".").substring(1)
+            currentPath.split("java")[1].replace("/", ".").substring(1).split(".kt")[0]
         }
     }
 

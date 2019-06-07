@@ -45,12 +45,14 @@ class FXTestBuilders : Controller() {
     private fun createControls(classInfo: TestClassInfo): String {
         var controlList = "\n\n\tprivate val listOfControls = listOf(\n"
 
-        classInfo.detectedUIControls.forEach {
+        classInfo.detectedUIControls.forEachIndexed { index, node ->
             val id = randomString()
-            controlList += "\t\tControl(${controlDictionary[it.nodeType]}::class, \"$id\")\n"
-            controls[it] = id
+            controls[node] = id
+            controlList +=  when (index) {
+                classInfo.detectedUIControls.size - 1 -> "\t\tControl(${controlDictionary[node.nodeType]}::class, \"$id\")\n"
+                else -> "\t\tControl(${controlDictionary[node.nodeType]}::class, \"$id\"),\n"
+            }
         }
-
         return "$controlList\n\t)\n\n"
     }
 
@@ -88,7 +90,7 @@ class FXTestBuilders : Controller() {
                 override val root = vbox()
             }
 
-            class ${classInfo.className}Test: ApplicationTest {
+            class ${classInfo.className}Test: ApplicationTest() {
 
                 lateinit var primaryStage: Stage
 
@@ -174,7 +176,7 @@ class FXTestBuilders : Controller() {
         """
 
         controls.forEach { (node, id) ->
-            setup += "\n\t\t\t$id${controlDictionary[node.nodeType]} = from(view.root).lookup(#$id).query()"
+            setup += "\n\t\t\t$id${controlDictionary[node.nodeType]} = from(view.root).lookup(\"#$id\").query()"
         }
 
         setup += "\n\t\t}\n\t}\n\n"
@@ -317,23 +319,28 @@ class FXTestBuilders : Controller() {
     private fun buildTextFieldTest(
             node: UINode,
             nodeId: String
-    ) = if (node.nodeChildren.has("args")) {
-        // may be potentially flappy if a model parameter returns an empty
-        """
-            assertNotNull($nodeId${node.nodeType}.text)
-            assertTrue(!$nodeId${node.nodeType}.text.isNullOrEmpty())
+    ): String {
+        val nodeType = controlDictionary[node.nodeType]
+        val generatedNodeId = "$nodeId$nodeType"
 
-            clickOn($nodeId${controlDictionary[node.nodeType]}).write("Something")
-            assertEquals("Something", $nodeId${controlDictionary[node.nodeType]}.text)
+        return if (node.nodeChildren.has("args")) {
+            // may be potentially flappy if a model parameter returns an empty
+            """
+            assertNotNull($generatedNodeId.text)
+            assertTrue(!$generatedNodeId.text.isNullOrEmpty())
+
+            clickOn($generatedNodeId).write("Something")
+            assertEquals("Something", $generatedNodeId.text)
         """.replaceIndent("\t\t")
         } else {
-        """
-            assertTrue($nodeId${node.nodeType}.text.isNullOrEmpty())
+            """
+            assertTrue($generatedNodeId.text.isNullOrEmpty())
 
-            clickOn($nodeId${controlDictionary[node.nodeType]}).write("Something")
-            assertEquals("Something", $nodeId${controlDictionary[node.nodeType]}.text)
+            clickOn($generatedNodeId).write("Something")
+            assertEquals("Something", $generatedNodeId.text)
         """.replaceIndent("\t\t")
         }
+    }
 
     /**
      * Stage 1: Click button.
