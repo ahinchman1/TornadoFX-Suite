@@ -1,17 +1,26 @@
-# TornadoFX-Suite (Stage 1)
-Automated UI test generation for TornadoFX.
+# TornadoFX-Suite (Stage 2)
+Automated UI test generation for TornadoFX. A study in Kotlin & Metaprogramming and how metaprogramming might be able to eventually further machine learning.
+
 **Note**:  For the time being, the scope of this project is kept small.  A user should be able to input their TornadoFX project and have tests generated for inputs like textfields, checkboxes, buttons, and so on
 
-![alttext](https://github.com/ahinchman1/TornadoFX-Suite/blob/master/tornadofx-suite.png)
+![alttext](https://github.com/ahinchman1/TornadoFX-Suite/blob/mapping-nodes-to-functions/tornadofx-suite.png)
 
-Testing has always been a challenge for engineers - many of us are opiniated on how testing should affect our development process and what ought to be tested in applications. While we will do our best to update as we go both in our issues and on here, TornadoFX-Suite is a WIP which will exist in 3 stages:
+Testing has always been a challenge for engineers - many of us are opiniated on how testing should affect our development process and what ought to be tested in applications. While we will do our best to update as we go both in our issues and on here, TornadoFX-Suite is a work in progress:
 
-* Stage 1: finding ways for Kotlin to create code-that-creates-code (current progress mapped below)
-![alttext](https://github.com/ahinchman1/TornadoFX-Suite/blob/master/Generative%20Testing.png)
-* Stage 2: creating a DSL to create an easy structure for writing tests
-* Stage 3: using machine-learning to learn what makes more useful testing rules
+![alttext](https://github.com/ahinchman1/TornadoFX-Suite/blob/mapping-nodes-to-functions/TornadoFX-Suite-Phase-3.png)
+
+* Stage 1: **Locating UI Nodes** Scanning and parsing uploaded code to locate UI Nodes and create a basic class breakdown.
+* Stage 2: **Generating UI Tests** finding ways for Kotlin to create code-that-creates-code
+* Stage 2: **Abstract Compositional Contracting** Post-parsing analysis to map associate functions to nodes and create functional composition for nodes. Creating a DSL to create an easy structure for writing tests. 
+![altext](https://github.com/ahinchman1/TornadoFX-Suite/blob/mapping-nodes-to-functions/function_composition_mapping.png)
+* Stage 3: **Creating FINITE State Machines**
+* Stage 4: **TBD Data collection/analysis** using machine-learning to learn what makes more useful testing rules
 
 Interested in the project? It's open source and anyone is welcome to contribute! Feel free to head over to the [Issues page](https://github.com/ahinchman1/TornadoFX-Suite/issues) to see what's going on.
+
+## Automata
+
+https://github.com/ahinchman1/Finite-State-Machine-Crash-Course
 
 ## Data Science Courses
 

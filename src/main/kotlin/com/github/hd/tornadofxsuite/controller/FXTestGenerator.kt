@@ -5,10 +5,10 @@ import com.github.ast.parser.frameworkconfigurations.TornadoFXView
 import com.github.ast.parser.frameworkconfigurations.detectRoot
 import com.github.ast.parser.frameworkconfigurations.detectScopes
 import com.github.ast.parser.frameworkconfigurations.saveComponentBreakdown
-import com.github.ast.parser.nodebreakdown.Digraph
-import com.github.ast.parser.nodebreakdown.Method
-import com.github.ast.parser.nodebreakdown.TestClassInfo
-import com.github.ast.parser.nodebreakdown.UINode
+import com.github.ast.parser.nodebreakdown.*
+import com.github.ast.parser.nodebreakdown.digraph.UINodeDigraph
+import com.github.hd.tornadofxsuite.app.OnParsingComplete
+import com.github.hd.tornadofxsuite.app.PrintFileToConsole
 import tornadofx.*
 import java.io.BufferedReader
 import java.io.File
@@ -17,10 +17,10 @@ import java.nio.file.Paths
 import java.util.*
 import kotlin.collections.ArrayList
 
-class PrintFileToConsole(val file: String, val textFile: String): FXEvent()
-class OnParsingComplete(val testClassInfo: ArrayList<TestClassInfo>): FXEvent()
-
 class FXTestGenerator: Controller() {
+
+    lateinit var filePath: String
+
     private val kotlinFiles = ArrayList<File>()
     var scanner = KParserImpl(
             "",
@@ -34,6 +34,8 @@ class FXTestGenerator: Controller() {
      * Open every file for AST parsing and send class breakdown for test generation
      */
     fun walk(path: String) {
+        filePath = path
+
         Files.walk(Paths.get(path)).use { allFiles ->
             allFiles.filter { path -> path.toString().endsWith(".kt") }
                     .forEach { path ->
@@ -46,14 +48,14 @@ class FXTestGenerator: Controller() {
         consoleLogViewHierarchy()
         consoleLogClassBreakdown()
 
-        val classes = breakupClasses(
+        val viewClasses = breakupClasses(
                 scanner.viewImports,
                 scanner.mapClassViewNodes,
                 scanner.detectedUIControls,
                 scanner.views
         )
 
-        fire(OnParsingComplete(classes))
+        fire(OnParsingComplete(viewClasses, scanner.classes))
     }
 
     /**
@@ -75,21 +77,21 @@ class FXTestGenerator: Controller() {
      */
     private fun breakupClasses(
             viewImports: HashMap<String, String>,
-            mappedViewNodes: HashMap<String, Digraph>,
+            mappedViewNodes: HashMap<String, UINodeDigraph>,
             detectedUIControls: HashMap<String, java.util.ArrayList<UINode>>,
             tfxViews: HashMap<String, TornadoFXView>
-    ): java.util.ArrayList<TestClassInfo> {
-        val classes = java.util.ArrayList<TestClassInfo>()
+    ): MapKClassTo<TestClassInfo> {
+        val classes = MapKClassTo<TestClassInfo>()
 
         viewImports.forEach { (className, item) ->
             // check that all items are there
             if (detectedUIControls.containsKey(className) &&
                     mappedViewNodes.containsKey(className)) {
                 val uiControls = detectedUIControls[className] ?: java.util.ArrayList()
-                val mappedNodes = mappedViewNodes[className] ?: Digraph()
+                val mappedNodes = mappedViewNodes[className] ?: UINodeDigraph()
                 val tfxView = tfxViews[className] ?: TornadoFXView()
 
-                classes.add(TestClassInfo(className, item, uiControls, mappedNodes, tfxView))
+                classes[className] = TestClassInfo(className, item, uiControls, mappedNodes, tfxView)
             } else println("Missing info for $className")
         }
 
@@ -116,12 +118,12 @@ class FXTestGenerator: Controller() {
                 println(className)
                 digraph.viewNodes.forEach { (bucket, children) ->
                     val nodeLevel = bucket.level
-                    var viewNode = "$nodeLevel \t${bucket.uiNode}"
+                    var viewNode = "$nodeLevel \t${bucket.nodeType}"
 
                     children.forEachIndexed { index, node ->
                         viewNode += if (index < children.size) {
-                            " -> ${node.uiNode} "
-                        } else "${node.uiNode}\n"
+                            " -> ${node.nodeType} "
+                        } else "${node.nodeType}\n"
 
                     }
                     println(viewNode)
@@ -137,19 +139,19 @@ class FXTestGenerator: Controller() {
 
     /**
      * Prints class breakdown including methods
-     * TODO - Finish method breakdown formatting and make it testable
+     * TODO - Continue to touch on method parsing
      */
-    fun consoleLogClassBreakdown() {
+    private fun consoleLogClassBreakdown() {
         scanner.classes.forEach { classBreakDown ->
             println("CLASS NAME: " + classBreakDown.className)
             println("CLASS PROPERTIES: ")
-            classBreakDown.classProperties.forEach { property ->
-                println("\t${property.propertyName}: ${property.propertyType}")
+            classBreakDown.properties.forEach { property ->
+                println("\t${property.name}: ${property.type}")
             }
             println("CLASS METHODS: ")
             var buildMethods = ""
-            classBreakDown.classMethods.forEach { method ->
-                buildMethods += buildMethodStatement(buildMethods, method)
+            classBreakDown.methods.forEach { method ->
+                buildMethods += buildMethodStatement(method)
             }
 
             println(buildMethods)
@@ -160,16 +162,24 @@ class FXTestGenerator: Controller() {
      * Prints method breakdown
      * TODO - Finish method breakdown formatting and make it testable
      */
-    private fun buildMethodStatement(buildMethod: String, method: Method): String {
-        var methodStatement = buildMethod
-        methodStatement += "-----------------\n|\tname:${method.name}\n|\tparameters: "
+    private fun buildMethodStatement(method: Method): String {
+        var methodStatement = ""
+        methodStatement += "-----------------\n|\t${method.name}("
 
-        method.parameters.forEach { parameter ->
-            methodStatement += "|\t\t${parameter.valOrVar} ${parameter.propertyName}: " +
-                    "${parameter.propertyType}\n"
+        method.parameters.forEachIndexed { index, parameter ->
+            methodStatement += when (index) {
+                method.parameters.size - 1 -> "${parameter.name}: ${parameter.type}"
+                else -> "${parameter.name}: ${parameter.type}, "
+            }
         }
 
-        methodStatement += "|\t method" + method.methodStatements + "\n-----------------\n"
+        methodStatement += ") {"
+
+        method.methodStatements.forEach {
+            methodStatement += "\n|\t\t$it"
+        }
+
+        methodStatement += "\n|\t}\n-----------------\n"
 
         return methodStatement
     }

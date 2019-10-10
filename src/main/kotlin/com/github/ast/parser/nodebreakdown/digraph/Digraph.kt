@@ -1,6 +1,6 @@
-package com.github.ast.parser.nodebreakdown
+package com.github.ast.parser.nodebreakdown.digraph
 
-import com.google.gson.JsonObject
+import com.github.ast.parser.nodebreakdown.Node
 import java.util.*
 
 /**
@@ -14,16 +14,16 @@ enum class VisitStatus {
 /**
  * Store view hierarchy in the form of a directed graph
  */
-class Digraph {
+abstract class Digraph<T: Node> {
 
-    val viewNodes = LinkedHashMap<UINode, HashSet<UINode>>()
-    lateinit var root: UINode
-    var size = 0
+    val viewNodes = LinkedHashMap<T, HashSet<T>>()
+    lateinit var root: T
+    var size: Int = 0
 
     /**
      * Add UI Node to List
      */
-    fun addNode(node: UINode): Boolean {
+    fun addNode(node: T): Boolean {
         var result = false
         if (viewNodes.isEmpty()) {
             root = node
@@ -40,7 +40,7 @@ class Digraph {
     /**
      * Remove UI Node from List
      */
-    fun removeNode(node: UINode): Boolean {
+    fun removeNode(node: T): Boolean {
         var result = false
         if (viewNodes.containsKey(node)) {
             viewNodes.remove(node)
@@ -57,7 +57,7 @@ class Digraph {
     /**
      * Add child Node to Node
      */
-    fun addEdge(source: UINode, destination: UINode): Boolean {
+    fun addEdge(source: T, destination: T): Boolean {
         var result = false
         if (viewNodes.containsKey(source)) {
             val getSource = viewNodes[source]
@@ -72,7 +72,7 @@ class Digraph {
     /**
      * Remove child Node from Node
      */
-    fun removeEdge(source: UINode, destination: UINode): Boolean {
+    fun removeEdge(source: T, destination: T): Boolean {
         var result = false
         if (viewNodes.containsKey(source)) {
             val getSource = viewNodes[source]
@@ -87,24 +87,27 @@ class Digraph {
     /**
      * Check if destination Node is a child of source Node
      */
-    fun isAdjacent(source: UINode, destination: UINode): Boolean =
+    fun isAdjacent(source: T, destination: T): Boolean =
             viewNodes[source]?.contains(destination) ?: false
 
     /**
      * Check if a Node exists in the view hierarchy
      */
-    fun hasNode(node: UINode): Boolean = viewNodes.containsKey(node)
+    fun hasNode(node: T): Boolean = viewNodes.containsKey(node)
 
-    fun getChildren(node: UINode): HashSet<UINode> = viewNodes[node] ?: HashSet()
+    /**
+     * Get Node Children in Digraph Form
+     */
+    fun getChildren(node: T): HashSet<T> = viewNodes[node] ?: HashSet()
 
     /**
      * Searches for node depth first
      */
-    fun depthFirstSearch(source: UINode, destination: UINode): Array<UINode> {
+    fun depthFirstSearch(source: T, destination: T): MutableList<T> {
         if (!viewNodes.containsKey(source) || !viewNodes.contains(destination)) {
-            return emptyArray()
+            return mutableListOf()
         }
-        val stack = Stack<UINode>()
+        val stack = Stack<T>()
         println("EXECUTING SEARCH")
         stack.push(source)
         return depthFirstSearch(stack, destination)
@@ -113,9 +116,9 @@ class Digraph {
     /**
      * Searches for node depth first recursive
      */
-    private fun depthFirstSearch(stack: Stack<UINode>, destination: UINode): Array<UINode> {
-        val visited = HashMap<UINode, VisitStatus>()
-        val path = LinkedList<UINode>()
+    private fun depthFirstSearch(stack: Stack<T>, destination: T): MutableList<T> {
+        val visited = HashMap<T, VisitStatus>()
+        val path = LinkedList<T>()
 
         while(stack.isNotEmpty()) {
             val current = stack.pop()
@@ -136,7 +139,7 @@ class Digraph {
             visited[current] = VisitStatus.VISITED
         }
 
-        return emptyArray()
+        return mutableListOf()
     }
 
     /**
@@ -146,27 +149,17 @@ class Digraph {
      * If the node level in the trace is greater than the destination
      * don't worry about it
      **/
-    private fun getDirectPath(nodeLevel: Int, trace: Queue<UINode>): Array<UINode> {
-        val nodePath = Array(nodeLevel + 1) { UINode("", 0, JsonObject(), ArrayList()) }
-
-        trace.iterator().forEach { node ->
-            if (node.level <= nodeLevel) {
-                nodePath[node.level] =  node
-            }
-        }
-
-        return nodePath
-    }
+    abstract fun getDirectPath(nodeLevel: Int, trace: Queue<T>): MutableList<T>
 
     /**
      * Get View Node by index
      **/
-    fun getElementByIndex(index: Int): UINode = (viewNodes.keys).toTypedArray()[index]
+    abstract fun getElementByIndex(index: Int): T
 
     /**
      * Find child-most element at level parentLevel
      **/
-    fun findLastElementWithParentLevel(parentLevel: Int): UINode {
+    fun findLastElementWithParentLevel(parentLevel: Int): T {
         var lastNode = root
 
         viewNodes.keys.forEach { node ->

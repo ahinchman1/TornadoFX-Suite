@@ -4,6 +4,8 @@ import com.github.ast.parser.frameworkconfigurations.ComponentBreakdownFunction
 import com.github.ast.parser.frameworkconfigurations.DetectFrameworkComponents
 import com.github.ast.parser.frameworkconfigurations.TornadoFXView
 import com.github.ast.parser.nodebreakdown.*
+import com.github.ast.parser.nodebreakdown.digraph.Digraph
+import com.github.ast.parser.nodebreakdown.digraph.UINodeDigraph
 import com.google.gson.*
 import kastree.ast.Node
 import kastree.ast.psi.Parser
@@ -24,45 +26,47 @@ open class KParserImpl(
 
     override var detectedUIControls = MapKClassTo<ArrayList<UINode>>()
 
-    override var mapClassViewNodes = MapKClassTo<Digraph>()
+    override var mapClassViewNodes = MapKClassToDigraph<UINodeDigraph>()
 
     override var viewImports = MapKClassTo<String>()
 
     override val gson = Gson()
-
-    var utils = KParserUtils()
 
     override fun parseAST(textFile: String) {
         val file = Parser.parseFile(textFile, true)
 
         file.decls.forEach { node ->
             when (node) {
-                is Node.Decl.Structured -> breakDownClass(node.name, file)
+                is Node.Decl.Structured -> breakDownClass(node.name, node)
                 is Node.Decl.Func -> node.name ?: independentFunctions.add(node.name.toString())
             }
         }
     }
 
-    override fun breakDownClass(className: String, file: Node.File) {
+    override fun breakDownClass(className: String, structuredNode: Node.Decl.Structured) {
         val classParents = ArrayList<String>()
         val classProperties = ArrayList<Property>()
         val classMethods = ArrayList<Method>()
 
-        val structuredNode = file.decls[0] as Node.Decl.Structured
+        structuredNode.parents.forEach { parentClass ->
+            val superClassNode = gson.toJsonTree(parentClass).asJsonObject
+            var superClass = superClassNode.type().getType()
 
-        // collecting this info for test information
-        structuredNode.parents.forEach {
-            val superClass = gson.toJsonTree(it).asJsonObject.type().getType()
+            // if parent class accepts generic parameters
+            if (superClassNode.hasTypeArguments()) {
+                superClass += getGenericTypeArgs(superClassNode)
+            }
+
             classParents.add(superClass)
             componentBreakdownFunction(superClass, className)
         }
 
         // Save for all files
-        structuredNode.members.forEach {
-            when (it) {
+        structuredNode.members.forEach { member ->
+            when (member) {
                 is Node.Decl.Structured -> println("this is probably a companion object")
-                is Node.Decl.Property -> convertToClassProperty(it, classProperties, className)
-                is Node.Decl.Func -> breakdownClassMethod(it, classMethods)
+                is Node.Decl.Property -> convertToClassProperty(member, classProperties, className)
+                is Node.Decl.Func -> breakdownClassMethod(member, classMethods)
             }
         }
 
@@ -71,10 +75,7 @@ open class KParserImpl(
 
     override fun breakdownClassMethod(method: Node.Decl.Func, classMethods: ArrayList<Method>) {
         val methodJson = gson.toJsonTree(method).asJsonObject
-        val methodStatements = ArrayList<String>()
-        val methodContent = methodJson.body()
-
-        breakdownBody(methodJson.body(), methodStatements)
+        val methodContent = ArrayList<String>()
 
         val parameters = ArrayList<Property>()
         methodJson.params().forEach { parameter ->
@@ -88,6 +89,8 @@ open class KParserImpl(
             parameters.add(Property("val", param.name(), paramType))
         }
 
+        methodContent.addAll(breakdownBody(methodJson.body(), methodContent))
+
         var returnType = "Unit"
         if (methodJson.has("type")) {
             returnType = methodJson.type().ref().getType()
@@ -99,35 +102,46 @@ open class KParserImpl(
                         name = methodJson.name(),
                         parameters = parameters,
                         returnType = returnType,
-                        methodStatements = methodStatements,
+                        methodStatements = methodContent,
                         viewNodesAffected = ArrayList()
                 )
         )
     }
 
-    override fun breakdownBody(body: JsonObject, methodStatements: ArrayList<String>) {
+    override fun breakdownBody(body: JsonObject, methodStatements: ArrayList<String>): ArrayList<String> {
+        val stmtArray = arrayListOf<String>()
+        stmtArray.addAll(methodStatements)
+
         when {
-            body.has("block") -> breakdownStmts(body.block().stmts(), methodStatements)
-            body.has("expr") -> methodStatements.add(breakdownExpr(body.expr(), ""))
-            else -> methodStatements.add(breakdownBinaryOperation((body.expr()), ""))
+            body.hasBlock()              -> stmtArray.addAll(breakdownStmts(body.block().stmts(), methodStatements))
+            body.hasDeclaration() ||
+                    body.hasExpression() -> stmtArray.add(breakdownExpr(body.expr(), ""))
+            else ->                         stmtArray.add(breakdownBinaryOperation((body.expr()), ""))
         }
+
+        return stmtArray
     }
 
-    override fun breakdownStmts(stmts: JsonArray, methodStatements: ArrayList<String>?) {
+    override fun breakdownStmts(stmts: JsonArray, methodStatements: ArrayList<String>): ArrayList<String> {
+        val stmtArray = arrayListOf<String>()
+        stmtArray.addAll(methodStatements)
+
         stmts.forEach { statement ->
             val stmt = statement.asJsonObject
             when {
-                stmt.has("expr") -> methodStatements?.add(breakdownExpr(stmt.expr(), ""))
-                stmt.has("decl") -> methodStatements?.add(breakdownDecl(stmt.decl(), ""))
+                stmt.hasExpressionCall() -> stmtArray.add(getExpressionCall(stmt.expr()))
+                stmt.hasExpression()  -> stmtArray.add(breakdownExpr(stmt.expr(), ""))
+                stmt.hasDeclaration() -> stmtArray.add(breakdownDecl(stmt.decl(), ""))
                 else ->  println("stmt has$stmt")
             }
         }
+        return stmtArray
     }
 
     override fun breakdownDecl(decl: JsonObject, buildStmt: String): String {
         return when {
-            decl.has("expr") -> breakdownDeclProperty(decl, buildStmt)
-            decl.has("body") -> {
+            decl.hasExpression()  -> breakdownDeclProperty(decl, buildStmt)
+            decl.hasBody() -> {
                 breakdownBody(decl.body(), arrayListOf())
                 "method body here: $decl"
             }
@@ -135,60 +149,76 @@ open class KParserImpl(
         }
     }
 
-    /**
-     * Not fucked up but does not account for all decl property types nor does it format properly
-     */
     override fun breakdownDeclProperty(decl: JsonObject, buildStmt: String): String {
-        val isolated = decl.vars().getObject(0)
-        val isolatedName = isolated.name()
-        val property = when {
-            decl.expr().has("expr") -> {
-                if (decl.expr().has("expr") && decl.expr().has("oper")) {
-                    Property(valOrVar(decl), isolatedName, decl.vars().getObject(0).type().ref().pieces().getObject(0).name())
-                } else {
-                    getProperty(
-                            decl,
-                            isolated,
-                            isolatedName)
-                }
+        val propertyName = decl.vars().getObject(0).name()
+        val propertyValue = when {
+            decl.expr().hasExpressionCall() -> getExpressionCall(decl.expr())
+            decl.expr().has("expr") && decl.expr().has("oper") -> {
+                var expression = breakdownExpr(decl.expr(), "")
+                expression += decl.vars().getObject(0).type().ref().getType()
+                expression
             }
-            decl.expr().has("lhs") &&
-                decl.expr().has("oper") &&
-                decl.expr().has("rhs") -> Property(
-                    valOrVar(decl),
-                    isolatedName,
-                    breakdownBinaryOperation(decl.expr(), "")
-            )
-            decl.expr().has("value") -> Property(
-                    valOrVar(decl),
-                    isolatedName,
-                    utils.getPrimitiveType(decl.expr()))
+            decl.expr().hasBinaryOperation() -> breakdownBinaryOperation(decl.expr(), "")
+            decl.expr().hasValue() -> {
+                var expression = breakdownBinaryOperation(decl.expr(), "")
+                expression
+            }
+            decl.expr().hasName() -> decl.expr().name()
             else -> TODO()
         }
-        val declaration = "$buildStmt${property.valOrVar} $isolatedName: ${property.propertyType}"
-        return "$declaration = ${breakdownExpr(decl, buildStmt)}"
+
+        val declaration = "${valOrVar(decl)} $propertyName"
+
+        return "$declaration = $propertyValue"
     }
 
     override fun breakdownExpr(
             expr: JsonObject,
             buildStmt: String,
-            methodStatements: ArrayList<String>?
+            methodStatements: ArrayList<String>
     ): String {
-        when {
-            expr.has("lhs") &&
-                    expr.has("oper") &&
-                    expr.has("rhs")-> breakdownBinaryOperation(expr, buildStmt)
-            expr.has("args") -> getArguments(expr.args(), buildStmt)
-            expr.has("name") -> buildStmt + expr.name()
-            expr.has("expr") -> breakdownExpr(expr.expr(), buildStmt)
-            expr.has("elems") -> getElems(expr.elems(), buildStmt)
-            expr.has("params") -> getParams(expr.params(), buildStmt)
-            expr.has("value") -> buildStmt + utils.getPrimitiveValue(expr)
-            expr.has("block") -> breakdownStmts(expr.block().stmts(), methodStatements)
+        var exprStmt = buildStmt
+        exprStmt += when {
+            expr.hasBinaryOperation()-> breakdownBinaryOperation(expr, exprStmt)
+            expr.hasExpressionCall() -> getExpressionCall(expr)
+            expr.hasArguments() -> getArguments(expr.args(), exprStmt)
+            expr.hasName() -> expr.name()
+            expr.hasExpression() -> breakdownExpr(expr.expr(), exprStmt)
+            expr.hasElements() -> getElems(expr.elems())
+            expr.hasParameters() -> getParams(expr.params(), exprStmt)
+            expr.hasValue() -> exprStmt + getPrimitiveValue(expr)
+            expr.hasBlock() -> breakdownStmts(expr.block().stmts(), methodStatements)
             expr.size() == 0 -> {}
             else -> println(expr)
         }
-        return buildStmt
+        return exprStmt
+    }
+
+    override fun getExpressionCall(expr: JsonObject): String {
+        val anonymousFunction = if (expr.hasLambda()) breakdownLambda(expr.lambda()) else ""
+        return getArguments(expr.args(), expr.expr().name()) + anonymousFunction
+    }
+
+    private fun breakdownLambda(func: JsonObject): String {
+        val functionContent = ArrayList<String>()
+        var internalFunction = "{"
+
+        if (func.hasParameters()) {
+            val params = getParams(func.params(), "")
+            if (params.isNotEmpty()) {
+                internalFunction += "$params->\n"
+            }
+        }
+
+        when {
+            func.hasBody() -> functionContent.addAll(breakdownBody(func.body(), functionContent))
+            func.hasBlock() -> functionContent.addAll(breakdownStmts(func.block().stmts(), functionContent))
+            else -> functionContent.add("")
+        }
+
+        functionContent.forEach { internalFunction += it }
+
+        return "$internalFunction}"
     }
 
     override fun getParams(params: JsonArray, buildStmt: String): String {
@@ -199,21 +229,19 @@ open class KParserImpl(
         return buildParams
     }
 
-    override fun getElems(elems: JsonArray, buildStmt: String): String {
-        var buildElems = buildStmt
-        if (elems.size() > 0) {
-            elems.forEach {
+    override fun getElems(elems: JsonArray): String {
+        var buildElems = ""
+         if (elems.size() > 0) {
+             elems.forEach {
                 val elem = it.asJsonObject
                 buildElems += when {
-                    elem.has("str") -> elem.str()
-                    elem.has("expr") -> breakdownExpr(elem, buildElems)
-                    elem.has("value") -> utils.getPrimitiveValue(elem)
-                    elem.has("lhs") &&
-                            elem.has("oper") &&
-                            elem.has("rhs") -> breakdownBinaryOperation(elem, buildElems)
-                    elem.has("name") -> elem.name()
-                    elem.has("recv") -> elem.recv().type().getType()
-                    else -> println("Looks like this element type is: $elem")
+                    elem.hasName() -> elem.name()
+                    elem.hasString() -> "\"" + elem.str() + "\""
+                    elem.hasExpression() -> "$/{" + breakdownExpr(elem, "")+ "}"
+                    elem.hasPrimitiveValue() -> getPrimitiveValue(elem)
+                    elem.hasBinaryOperation() -> "$/{" + breakdownBinaryOperation(elem, "") + "}"
+                    elem.hasReceiver() -> elem.recv().type().getType()
+                    else -> "Looks like this element type is: $elem"
                 }
             }
         }
@@ -224,25 +252,56 @@ open class KParserImpl(
         var buildArgs = "$buildStmt("
         if (arguments.size() > 0) {
             arguments.forEachIndexed { index, argument ->
-                val argExpression = argument.asJsonObject.expr()
-                if (argExpression.has("elems")) {
-                    buildArgs += getElems(argExpression.elems(), buildArgs)
+                val arg = argument.asJsonObject
+                val argExpression = arg.expr()
+
+                buildArgs += when {
+                    argExpression.hasName() -> argExpression.name()
+                    argExpression.hasReceiver() -> argExpression.recv().type().getType() + "::class"
+                    argExpression.hasElements() -> getElems(argExpression.elems())
+                    argExpression.hasExpression() -> breakdownExpr(argExpression.expr(), "")
+                    argExpression.hasBinaryOperation() -> breakdownBinaryOperation(argExpression, "")
+                    else -> "" // TODO
                 }
-                buildArgs += if (index < arguments.size()) ", " else ")"
+                if (arg.has("name")) {
+                    buildArgs = arg.name() + " = " + buildArgs
+                }
+                buildArgs += if (index < arguments.size() - 1) ", " else ")"
             }
         } else buildArgs += ")"
         return buildArgs
     }
 
     override fun breakdownBinaryOperation(expr: JsonObject, buildStmt: String): String {
-        val oper = expr.oper()
-        val operator = when {
-            oper.has("str")  -> oper.str()
-            oper.has("token") -> utils.getToken(oper.token())
-            else -> "{$oper}"
+        var buildBinary = buildStmt
+
+        val lhs = expr.lhs()
+        val leftHandSide = when {
+            lhs.hasPrimitiveValue() -> getPrimitiveValue(lhs)
+            lhs.hasName()           -> lhs.name()
+            lhs.hasExpressionCall() -> getExpressionCall(lhs)
+            lhs.hasExpression()     -> breakdownExpr(lhs.expr(), "")
+            else                    -> breakdownBinaryOperation(expr.lhs(), buildBinary)
         }
 
-        return "$buildStmt${breakdownExpr(expr.lhs(), buildStmt)}$operator${breakdownExpr(expr.rhs(), buildStmt)}"
+        val oper = expr.oper()
+        val operator = when {
+            oper.hasString()        -> oper.str()
+            oper.hasToken()         -> getToken(oper.token())
+            else                    -> "{$oper}"
+        }
+
+        val rhs = expr.rhs()
+        val rightHandSide = when {
+            rhs.hasPrimitiveValue() -> getPrimitiveValue(rhs)
+            rhs.hasName()           -> rhs.name()
+            rhs.hasExpressionCall() -> getExpressionCall(rhs)
+            rhs.hasExpression()     -> breakdownExpr(rhs.expr(), "")
+            else                    -> breakdownBinaryOperation(expr.rhs(), buildBinary)
+        }
+
+        buildBinary += "$leftHandSide$operator$rightHandSide"
+        return buildBinary
     }
 
     override fun convertToClassProperty(
@@ -274,9 +333,9 @@ open class KParserImpl(
 
     override fun saveViewImport(): String {
         return if (currentPath.contains("kotlin/")) {
-            currentPath.split("kotlin")[1].replace("/", ".").substring(1)
+            currentPath.split("kotlin")[1].replace("/", ".").substring(1).split(".kt")[0]
         } else {
-            currentPath.split("java")[1].replace("/", ".").substring(1)
+            currentPath.split("java")[1].replace("/", ".").substring(1).split(".kt")[0]
         }
     }
 
@@ -286,10 +345,9 @@ open class KParserImpl(
      * above for Binary Operations
      */
     override fun getObservableProperty(node: JsonObject, isolatedName: String): Property {
-        val type = node.expr().lhs().expr().name()
 
         // build objects for primitive lists
-        val isolatedType = when (type) {
+        val isolatedType = when (val type = node.expr().lhs().expr().name()) {
             "listOf" -> {
                 // get list
                 val elements = node.expr().lhs().args()
@@ -303,8 +361,8 @@ open class KParserImpl(
                     objectItems.forEachIndexed { index, property ->
                         val elem = property.asJsonObject.expr().elems().getObject(0)
                         when {
-                            elem.has("str") -> list += "${elem.get("str")}"
-                            elem.has("expr") -> list += breakdownExpr(elem, list)
+                            elem.hasString() -> list += "${elem.get("str")}"
+                            elem.hasExpression() -> list += breakdownExpr(elem, list)
                             else -> println("Looks like this element type is: $elem")
                         }
                         list += if (index != objectItems.size() - 1) ", " else ").observable"
@@ -332,7 +390,7 @@ open class KParserImpl(
         when {
             // primitive property
             node.expr().expr().has("form") -> {
-                isolatedType = utils.getPrimitiveType(node.expr().expr().form())
+                isolatedType = getPrimitiveType(node.expr().expr().form())
             }
             // collection property
             node.expr().expr().has("name") -> {
@@ -348,10 +406,9 @@ open class KParserImpl(
                         }
                     }
                     "HashMap" -> "$type<" +
-                            node.expr().typeArgs().getObject(0).ref().getType() + ","+
-                            node.expr().typeArgs().getObject(1).ref().getType() + ">"
-                    "ArrayList" -> "$type<" +
-                            node.expr().typeArgs().getObject(0).ref().getType() + ">"
+                            node.getGenericTypeArgument(0) + "," +
+                            node.getGenericTypeArgument(1) + ">"
+                    "ArrayList" -> "$type<" + node.getGenericTypeArgument(0) + ">"
                     "mutableListOf" -> {
                         val listOfMemberType = node.expr().typeArgs()
 
@@ -369,14 +426,25 @@ open class KParserImpl(
         return Property(valOrVar(node), isolatedName, isolatedType)
     }
 
-    override fun valOrVar(node: JsonObject): String = if (node.readOnly()) "val " else "var "
+    /**
+     * Using enum classes to check if lambda is a data control
+     */
+    inline fun <reified T : Enum<T>> isControl(control: String): Boolean {
+        var result = false
+        enumValues<T>().forEach {
+            if (control.toLowerCase() == (it.name).toLowerCase()) {
+                result = true
+            }
+        }
+        return result
+    }
 
     /**
      * Using enum classes to check for control values here
      */
     inline fun <reified T : Enum<T>> addControls(control: UINode, className: String) {
         enumValues<T>().forEach {
-            if (control.uiNode.toLowerCase() == (it.name).toLowerCase()) {
+            if (control.nodeType.toLowerCase() == (it.name).toLowerCase()) {
                 if (!detectedUIControls.containsKey(className)) {
                     val controlCollection = ArrayList<UINode>()
                     detectedUIControls[className] = controlCollection

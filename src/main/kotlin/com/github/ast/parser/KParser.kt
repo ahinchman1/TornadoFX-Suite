@@ -1,6 +1,7 @@
 package com.github.ast.parser
 
 import com.github.ast.parser.nodebreakdown.*
+import com.github.ast.parser.nodebreakdown.digraph.UINodeDigraph
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -34,11 +35,11 @@ interface KParser {
 
     /**
      * key: class name
-     * value: a representation of the view hierarchy via a [Digraph]
+     * value: a representation of the view hierarchy via a [UINodeDigraph]
      *
      * @return all available view hierarchies represented by directed graphs found in view classes
      */
-    var mapClassViewNodes: MapKClassTo<Digraph>
+    var mapClassViewNodes: MapKClassToDigraph<UINodeDigraph>
 
     /**
      * key: class name
@@ -72,19 +73,18 @@ interface KParser {
      *  - structs: companion objects, etc TODO get to this eventually
      *
      * @param className: [String] -> Node.Decl.name of class
-     * @param file: [Node.File] -> kastree.ast.Node.File
+     * @param structuredNode: [Node.Decl.Structured] -> kastree.ast.Node.Decl.Structured
      */
-    fun breakDownClass(className: String, file: Node.File)
+    fun breakDownClass(className: String, structuredNode: Node.Decl.Structured)
 
     /**
      * Convert method with [Gson] and start breaking down class methods
      * to record into a [Method] object.
      *
-     *  TODO Part 1 - Start collecting the content of methods from current AST breakdown.
      *  TODO Part 2 - Map nodes-to-function as method analysis detects node property changes.
      *
      * @param method: [Node.Decl.Func] -> kastree.ast.Node.Decl.Func
-     * @param classMethods: [ArrayList] -> ArrayList of [Methods] passed down
+     * @param classMethods: [ArrayList] -> ArrayList of [Method] passed down
      *                                     to preserve methods per class
      */
     fun breakdownClassMethod(method: Node.Decl.Func, classMethods: ArrayList<Method>)
@@ -106,7 +106,7 @@ interface KParser {
      * @param methodStatements: [ArrayList] -> ArrayList of [String] passed down
      *                                     to preserve methods per class
      */
-    fun breakdownBody(body: JsonObject, methodStatements: ArrayList<String>)
+    fun breakdownBody(body: JsonObject, methodStatements: ArrayList<String>): ArrayList<String>
 
     /**
      * Breakdown the contents of a method located in a block, or { }.
@@ -116,7 +116,7 @@ interface KParser {
      * @param methodStatements: [ArrayList] -> ArrayList of [Method] passed down
      *                                     to preserve methods per class
      */
-    fun breakdownStmts(stmts: JsonArray, methodStatements: ArrayList<String>? = ArrayList())
+    fun breakdownStmts(stmts: JsonArray, methodStatements: ArrayList<String> = ArrayList()): ArrayList<String>
 
     /**
      * Determine whether a node declaration is an expression:
@@ -163,12 +163,20 @@ interface KParser {
     fun breakdownExpr(
             expr: JsonObject,
             buildStmt: String,
-            methodStatements: ArrayList<String>? = arrayListOf()
+            methodStatements: ArrayList<String> = arrayListOf()
     ): String
 
     /**
-     * TODO FIND THE DIFFERENCE BETWEEN PARAMS, ARGUMENTS, AND PARAMS
-     * Breaks down parameter values passed within a method call
+     * Special expression function that helps organizes expression call
+     *
+     * @param expr: [JsonObject] -> node expression object
+     *
+     * @return [String], continued statement building for method content
+     */
+    fun getExpressionCall(expr: JsonObject): String
+
+    /**
+     * Breaks down parameter values defined in a function call
      *
      * @param params: [JsonArray] -> node parameters
      * @param buildStmt: [String] -> Buildup of statement string to record
@@ -179,20 +187,16 @@ interface KParser {
     fun getParams(params: JsonArray, buildStmt: String): String
 
     /**
-     * TODO FIND THE DIFFERENCE BETWEEN PARAMS, ARGUMENTS, AND PARAMS
-     * Breaks down elements within a collection
+     * Breaks down elements used within a call
      *
      * @param elems: [JsonArray] -> node elements
-     * @param buildStmt: [String] -> Buildup of statement string to record
-     *                               for method contents
      *
      * @return [String], continued statement building for method content
      */
-    fun getElems(elems: JsonArray, buildStmt: String): String
+    fun getElems(elems: JsonArray): String
 
     /**
-     * TODO FIND THE DIFFERENCE BETWEEN PARAMS, ARGUMENTS, AND PARAMS
-     * Breaks down parameter values passed within a method call
+     * Breaks down argument(s), the actual value passed to the function
      *
      * @param arguments: [JsonArray] -> node arguments
      * @param buildStmt: [String] -> Buildup of statement string to record
@@ -267,16 +271,5 @@ interface KParser {
      * @return [Property] a class member property or class member collection
      */
     fun getProperty(node: JsonObject, isolated: JsonObject, isolatedName: String): Property
-
-    /***
-     * Kastree readOnly values indicates whether a value is mutable or immutable.
-     *
-     * @param node: [JsonObject] - node property
-     * @param isolated: [JsonObject] - for potential dependency injection
-     * @param isolatedName: [String] - name assigned to property
-     *
-     * @return [String] 'val' or 'var'
-     */
-    fun valOrVar(node: JsonObject): String
 
 }

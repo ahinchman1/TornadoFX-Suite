@@ -33,12 +33,12 @@ class Dialog : Fragment() {
                                 items.add(className)
                                 digraph.viewNodes.forEach { (bucket, children) ->
                                     val nodeLevel = bucket.level
-                                    var viewNode = "$nodeLevel \t${bucket.uiNode}"
+                                    var viewNode = "$nodeLevel \t${bucket.nodeType}"
 
                                     children.forEachIndexed { index, node ->
                                         viewNode += if (index < children.size) {
-                                            " -> ${node.uiNode} "
-                                        } else "${node.uiNode}\n"
+                                            " -> ${node.nodeType} "
+                                        } else "${node.nodeType}\n"
                                     }
                                     items.add(viewNode)
                                 }
@@ -58,7 +58,7 @@ class Dialog : Fragment() {
                         fxTestGenerator.scanner.detectedUIControls.forEach { view ->
                             items.add(view.key)
                             view.value.forEach { input ->
-                                items.add("\t${input.uiNode}")
+                                items.add("\t${input.nodeType}")
                             }
                         }
                     }

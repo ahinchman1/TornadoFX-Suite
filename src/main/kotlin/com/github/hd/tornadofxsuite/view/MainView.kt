@@ -1,10 +1,9 @@
 package com.github.hd.tornadofxsuite.view
 
+import com.github.ast.parser.nodebreakdown.MapKClassTo
 import com.github.ast.parser.nodebreakdown.TestClassInfo
-import com.github.hd.tornadofxsuite.app.Styles
+import com.github.hd.tornadofxsuite.app.*
 import com.github.hd.tornadofxsuite.controller.FXTestGenerator
-import com.github.hd.tornadofxsuite.controller.OnParsingComplete
-import com.github.hd.tornadofxsuite.controller.PrintFileToConsole
 import javafx.geometry.Pos
 import javafx.scene.control.ListView
 import javafx.scene.layout.HBox
@@ -13,13 +12,11 @@ import javafx.util.Duration
 import tornadofx.*
 import java.io.File
 
-class ReadFilesRequest(val file: File) : FXEvent(EventBus.RunOn.BackgroundThread)
-
 class MainView : View() {
     private val testGenerator: FXTestGenerator by inject()
     val consolePath = System.getProperty("os.name") + " ~ " + System.getProperty("user.name") + ": "
 
-    val classesTestInfo = ArrayList<TestClassInfo>()
+    val classesTestInfo = MapKClassTo<TestClassInfo>()
 
     lateinit var console: ListView<String>
     lateinit var overlay: HBox
@@ -31,7 +28,10 @@ class MainView : View() {
         }
 
         subscribe<OnParsingComplete> { event ->
-            classesTestInfo.addAll(event.testClassInfo)
+            // TODO work on UI for loading smh make it pretty
+            fire(MapNodesToFunctionsRequest(event.viewTestClassInfo, event.classBreakDown))
+            // TODO move this out into another fxevent for when mapping is complete
+            classesTestInfo.putAll(event.viewTestClassInfo)
             askUserDialog()
         }
     }
