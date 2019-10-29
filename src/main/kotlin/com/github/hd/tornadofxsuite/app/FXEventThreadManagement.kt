@@ -9,6 +9,13 @@ import java.io.File
 /**
  * Sent to FX background thread for reading and AST parsing
  */
+class ReadKotlinScripting(
+  val textFile: String
+) : FXEvent(EventBus.RunOn.BackgroundThread)
+
+/**
+ * Sent to FX background thread for reading and AST parsing
+ */
 class ReadFilesRequest(
         val file: File
 ) : FXEvent(EventBus.RunOn.BackgroundThread)

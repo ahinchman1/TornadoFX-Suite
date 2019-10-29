@@ -10,15 +10,16 @@ import javafx.scene.layout.HBox
 import javafx.stage.DirectoryChooser
 import javafx.util.Duration
 import tornadofx.*
+import tornadofx.Stylesheet.Companion.menu
 import java.io.File
 
 class MainView : View() {
     private val testGenerator: FXTestGenerator by inject()
-    val consolePath = System.getProperty("os.name") + " ~ " + System.getProperty("user.name") + ": "
+    private val consolePath = System.getProperty("os.name") + " ~ " + System.getProperty("user.name") + ": "
 
     val classesTestInfo = MapKClassTo<TestClassInfo>()
 
-    lateinit var console: ListView<String>
+    private lateinit var console: ListView<String>
     lateinit var overlay: HBox
     lateinit var directoryChooser: DirectoryChooser
 
@@ -40,6 +41,14 @@ class MainView : View() {
         vbox {
             prefWidth = 800.0
             prefHeight = 600.0
+
+            menubar {
+                menu("File") {
+                    item("AST syntax compiler").action {
+                        replaceWith<AstParserDiagram>()
+                    }
+                }
+            }
 
             hbox {
                 // imageview("tornado-fx-logo.png")
