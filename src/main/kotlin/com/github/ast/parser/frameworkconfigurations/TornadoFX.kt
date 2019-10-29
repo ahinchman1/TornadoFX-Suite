@@ -131,15 +131,11 @@ fun KParserImpl.detectLambdaControls(
         /**
          * Create [UINodeDigraph] if the class is new, otherwise, add node to the existing digraph.
          */
-        val graphNode = UINode(rootName, nodeLevel, root, rootAssignment, FunctionDigraph(), ArrayList())
-
-        if (mapClassViewNodes.contains(className)) {
-            mapClassViewNodes[className]?.addNode(graphNode)
-        } else {
-            val digraph = UINodeDigraph()
-            digraph.addNode(graphNode)
-            mapClassViewNodes[className] = digraph
+        val digraph = mapClassViewNodes.getOrPut(className){
+            UINodeDigraph()
         }
+        val graphNode = UINode(rootName, nodeLevel, root, rootAssignment, FunctionDigraph(), ArrayList())
+        digraph.addNode(graphNode)
 
         /**
          * Add an edge (a child node) to the parent node level if there is a parent
