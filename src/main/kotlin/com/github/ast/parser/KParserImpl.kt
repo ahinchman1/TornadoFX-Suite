@@ -4,9 +4,10 @@ import com.github.ast.parser.frameworkconfigurations.ComponentBreakdownFunction
 import com.github.ast.parser.frameworkconfigurations.DetectFrameworkComponents
 import com.github.ast.parser.frameworkconfigurations.TornadoFXView
 import com.github.ast.parser.nodebreakdown.*
-import com.github.ast.parser.nodebreakdown.digraph.Digraph
 import com.github.ast.parser.nodebreakdown.digraph.UINodeDigraph
-import com.google.gson.*
+import com.google.gson.Gson
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import kastree.ast.Node
 import kastree.ast.psi.Parser
 import java.util.*
@@ -430,13 +431,9 @@ open class KParserImpl(
      * Using enum classes to check if lambda is a data control
      */
     inline fun <reified T : Enum<T>> isControl(control: String): Boolean {
-        var result = false
-        enumValues<T>().forEach {
-            if (control.toLowerCase() == (it.name).toLowerCase()) {
-                result = true
-            }
+        return enumValues<T>().any {
+            control.equals(it.name, ignoreCase = true)
         }
-        return result
     }
 
     /**

@@ -44,10 +44,8 @@ abstract class Digraph<T: Node> {
         var result = false
         if (viewNodes.containsKey(node)) {
             viewNodes.remove(node)
-            for (entry in viewNodes.entries) {
-                if (entry.value.contains(node)) {
-                    viewNodes[entry.key]?.remove(node)
-                }
+            viewNodes.entries.removeAll {
+                it.value.contains(node)
             }
             result = true
         }
@@ -160,13 +158,9 @@ abstract class Digraph<T: Node> {
      * Find child-most element at level parentLevel
      **/
     fun findLastElementWithParentLevel(parentLevel: Int): T {
-        var lastNode = root
-
-        viewNodes.keys.forEach { node ->
-            if (node.level == parentLevel) {
-                lastNode = node
-            }
-        }
+        val lastNode = viewNodes.keys.lastOrNull {
+            it.level == parentLevel
+        } ?: root
 
         return lastNode
     }
