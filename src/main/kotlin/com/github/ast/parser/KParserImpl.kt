@@ -222,27 +222,22 @@ open class KParserImpl(
     }
 
     override fun getParams(params: JsonArray, buildStmt: String): String {
-        var buildParams = buildStmt
-        params.forEach { parameter ->
-            buildParams += parameter.asJsonObject.vars().getObject(0).name()
+        return buildStmt + params.joinToString { parameter ->
+            parameter.asJsonObject.vars().getObject(0).name()
         }
-        return buildParams
     }
 
     override fun getElems(elems: JsonArray): String {
-        var buildElems = ""
-         if (elems.size() > 0) {
-             elems.forEach {
-                val elem = it.asJsonObject
-                buildElems += when {
-                    elem.hasName() -> elem.name()
-                    elem.hasString() -> "\"" + elem.str() + "\""
-                    elem.hasExpression() -> "$/{" + breakdownExpr(elem, "")+ "}"
-                    elem.hasPrimitiveValue() -> getPrimitiveValue(elem)
-                    elem.hasBinaryOperation() -> "$/{" + breakdownBinaryOperation(elem, "") + "}"
-                    elem.hasReceiver() -> elem.recv().type().getType()
-                    else -> "Looks like this element type is: $elem"
-                }
+        val buildElems = elems.joinToString {
+            val elem = it.asJsonObject
+            when {
+                elem.hasName() -> elem.name()
+                elem.hasString() -> "\"" + elem.str() + "\""
+                elem.hasExpression() -> "$/{" + breakdownExpr(elem, "") + "}"
+                elem.hasPrimitiveValue() -> getPrimitiveValue(elem)
+                elem.hasBinaryOperation() -> "$/{" + breakdownBinaryOperation(elem, "") + "}"
+                elem.hasReceiver() -> elem.recv().type().getType()
+                else -> "Looks like this element type is: $elem"
             }
         }
         return buildElems
