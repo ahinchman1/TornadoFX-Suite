@@ -12,6 +12,7 @@ data class ClassBreakDown(val className: String,
                           val properties: ArrayList<Property>,
                           val methods: ArrayList<Method>)
 
+// keep a list of node properties expected to be changed?
 data class Property(val valOrVar: String,
                     val name: String,
                     val type: String)

@@ -5,7 +5,8 @@ import com.github.hd.tornadofxsuite.app.MapNodesToFunctionsRequest
 import tornadofx.*
 
 /**
- * Continues to modify digraph structures by adding to the AssociatedFunctions portion of a UINode
+ * Continues to modify digraph structures by adding to the AssociatedFunctions portion of a UINode.
+ * Covers what functions alters a property of a node
  */
 class AssociatedFunctionsNodeMapper: Controller() {
     lateinit var views: MapKClassTo<TestClassInfo>
