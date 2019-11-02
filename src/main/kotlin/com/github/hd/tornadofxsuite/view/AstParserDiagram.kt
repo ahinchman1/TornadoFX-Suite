@@ -1,35 +1,20 @@
 package com.github.hd.tornadofxsuite.view
 
-import com.github.ast.parser.KParserImpl
-import com.github.ast.parser.frameworkconfigurations.detectRoot
-import com.github.ast.parser.frameworkconfigurations.detectScopes
-import com.github.ast.parser.frameworkconfigurations.saveComponentBreakdown
+import com.github.hd.tornadofxsuite.app.PopulateAstParsingToConsole
 import com.github.hd.tornadofxsuite.app.ReadKotlinScripting
 import com.github.hd.tornadofxsuite.app.Styles
-import javafx.geometry.Pos
 import javafx.scene.control.TextArea
 import javafx.scene.layout.HBox
-import kastree.ast.psi.Parser
 import tornadofx.*
-import java.util.HashMap
 
 class AstParserDiagram : View("AST Parsing Visual Repesentation") {
-
   private lateinit var overlay: HBox
   private lateinit var console: TextArea
 
-  var scanner = KParserImpl(
-    "",
-    KParserImpl::saveComponentBreakdown,
-    HashMap(),
-    KParserImpl::detectScopes,
-    KParserImpl::detectRoot
-  )
-
   override val root = stackpane {
     vbox {
-      prefWidth = 600.0
-      prefHeight = 400.0
+      prefWidth =  800.0
+      prefHeight = 600.0
 
       menubar {
         menu("File") {
@@ -51,19 +36,28 @@ class AstParserDiagram : View("AST Parsing Visual Repesentation") {
           marginTopBottom(40.0)
           marginLeftRight(40.0)
         }
-        vbox {
-          label("Fetching")
-          progressindicator()
-          alignment = Pos.TOP_CENTER
-          spacing = 4.0
-          paddingTop = 10.0
-        }
-        console = textarea {
-          subscribe<ReadKotlinScripting> { event ->
-            val file = Parser.parseFile(event.textFile, true)
+        hbox {
+          console = textarea("Fill out Kotlin code here:") {
+            hboxConstraints {
+              marginRight = 20.0
+              prefWidth = 330.0
+            }
+          }
+          listview<String> {
+            subscribe<PopulateAstParsingToConsole> { event ->
+              println(event)
+              items.add("SUCCESS....")
+              items.add(event.file)
+              items.addAll(event.tree)
+            }
+            items.add("AST Parsing renders here:")
+            hboxConstraints {
+              marginLeft = 20.0
+              prefWidth = 330.0
+            }
           }
         }
-      }
+      }.addClass(Styles.main)
 
       button("Show AST breakdown") {
         id = "compileAndRenderAST"
@@ -73,11 +67,10 @@ class AstParserDiagram : View("AST Parsing Visual Repesentation") {
         }
 
         vboxConstraints {
-          marginLeft = 150.0
-          marginBottom = 20.0
+          marginLeft = 300.0
+          marginBottom = 40.0
         }
       }
-
     }.addClass(Styles.main)
 
     overlay = hbox {
