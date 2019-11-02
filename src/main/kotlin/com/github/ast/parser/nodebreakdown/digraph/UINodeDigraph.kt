@@ -43,11 +43,9 @@ class UINodeDigraph: Digraph<UINode>() {
     override fun getElementByIndex(index: Int): UINode = (viewNodes.keys).toTypedArray()[index]
 
     fun getNodeByPropertyAssignment(propertyAssignment: String): UINode? {
-        getChildren(root).forEach { node ->
-            if (node.propertyAssignment.isNotBlank() && node.propertyAssignment == propertyAssignment) {
-                return node
-            }
+        if (propertyAssignment.isBlank()) return null
+        return getChildren(root).firstOrNull { node->
+            node.propertyAssignment == propertyAssignment
         }
-        return null
     }
 }
