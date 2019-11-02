@@ -10,7 +10,8 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import kastree.ast.Node
 import kastree.ast.psi.Parser
-import java.util.*
+import org.jetbrains.kotlin.utils.getOrPutNullable
+import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 open class KParserImpl(
@@ -437,11 +438,9 @@ open class KParserImpl(
     inline fun <reified T : Enum<T>> addControls(control: UINode, className: String) {
         enumValues<T>().forEach {
             if (control.nodeType.toLowerCase() == (it.name).toLowerCase()) {
-                if (!detectedUIControls.containsKey(className)) {
-                    val controlCollection = ArrayList<UINode>()
-                    detectedUIControls[className] = controlCollection
-                }
-                detectedUIControls[className]?.add(control)
+                detectedUIControls.getOrPutNullable(className){
+                    ArrayList()
+                }.add(control)
             }
         }
     }
