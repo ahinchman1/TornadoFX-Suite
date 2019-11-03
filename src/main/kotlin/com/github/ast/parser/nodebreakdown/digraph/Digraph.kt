@@ -115,7 +115,7 @@ abstract class Digraph<T: Node> {
      * Searches for node depth first recursive
      */
     private fun depthFirstSearch(stack: Stack<T>, destination: T): MutableList<T> {
-        val visited = HashMap<T, VisitStatus>()
+        val visited = HashMap<T, VisitStatus>().withDefault { VisitStatus.UNVISITED }
         val path = LinkedList<T>()
 
         while(stack.isNotEmpty()) {
@@ -126,11 +126,7 @@ abstract class Digraph<T: Node> {
             if (current == destination) return getDirectPath(destination.level, path)
 
             viewNodes[current]?.iterator()?.forEach { child ->
-                if (visited.containsKey(child)) {
-                    if (visited[child] == VisitStatus.UNVISITED) {
-                        stack.push(child)
-                    }
-                } else {
+                if (visited.getValue(child) == VisitStatus.UNVISITED){
                     stack.push(child)
                 }
             }
