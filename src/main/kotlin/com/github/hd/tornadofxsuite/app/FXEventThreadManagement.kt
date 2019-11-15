@@ -37,3 +37,21 @@ class OnParsingComplete(
         val classBreakDown: ArrayList<ClassBreakDown>
 ): FXEvent()
 
+/** -------------------------- AST Parsing Tree Rendering -------------------------------------*/
+
+/**
+ * Sent to FX background thread for reading and AST parsing
+ */
+class ReadKotlinScripting(
+  val textFile: String
+) : FXEvent(EventBus.RunOn.BackgroundThread)
+
+/**
+ * Once AST parsing is complete, send the results back to the Application thread
+ * for printing out the rules of AST parse blocks
+ */
+class PopulateAstParsingToConsole(
+  val file: String,
+  val tree: List<String> // TODO probably going to be something else for a Tree structure
+): FXEvent()
+
